@@ -1,0 +1,143 @@
+/* ============================================================================
+ * mem_stub.lib — QCore SRAM macro black-box timing model (DC-local copy).
+ *
+ * Verbatim copy of asic/mem_stub.lib (P10/M9) with ONE correction so Synopsys
+ * Library Compiler 2018 accepts it: the setup/hold constraint tables used the
+ * `delay_2x2` template (input_net_transition x total_output_net_cap), which is
+ * invalid for a *constraint* table (LC LBDB-280: "rise_constraint look-up table
+ * cannot use 'delay_2x2'").  A constraint table must be indexed by
+ * related_pin_transition x constrained_pin_transition, so a dedicated
+ * `constraint_2x2` template is added and the four constraint groups are
+ * repointed to it.  All timing values are preserved verbatim (access ~2 ns,
+ * write setup 0.5/0.6 ns, hold 0).  Area stays 0 (macro area is the separate
+ * OpenRAM/density estimate in docs/p10/asic-report.md).
+ *
+ * NOTE: the DC flow links the SRAM as a *plain empty-module black box*
+ * (asic/sram_macro.sv) + set_dont_touch, NOT via this timing lib — the stub's
+ * multi-bit pins (addr[22:0] / rd_data[7:0] / wr_data[7:0]) are declared scalar
+ * and LC 2018 rejects `bus_type` on a scalar pin (LBDB-76), so a bus-width
+ * timing model cannot be expressed cleanly here.  This lib remains the OpenSTA
+ * timing model (unchanged asic/mem_stub.lib) and documents the DC-local
+ * constraint-table fix.
+ * ==========================================================================*/
+library (qcore_mem_stub) {
+  delay_model : table_lookup;
+  time_unit : "1ns";
+  voltage_unit : "1V";
+  current_unit : "1mA";
+  pulling_resistance_unit : "1kohm";
+  capacitive_load_unit (1.0, "pf");
+  leakage_power_unit : "1nW";
+
+  lu_table_template (delay_2x2) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.05, 0.5");
+    index_2 ("0.001, 0.01");
+  }
+  lu_table_template (constraint_2x2) {
+    variable_1 : related_pin_transition;
+    variable_2 : constrained_pin_transition;
+    index_1 ("0.05, 0.5");
+    index_2 ("0.05, 0.5");
+  }
+  power_lut_template (energy_2x2) {
+    variable_1 : input_transition_time;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.05, 0.5");
+    index_2 ("0.001, 0.01");
+  }
+
+  cell (sram_macro) {
+    area : 0.0;
+    pin (clk) {
+      direction : input;
+      clock : true;
+      capacitance : 0.01;
+    }
+    pin (addr) {
+      direction : input;
+      capacitance : 0.005;
+    }
+    pin (rd_data) {
+      direction : output;
+      function : "addr";
+      max_capacitance : 0.05;
+      timing () {
+        related_pin : "addr";
+        timing_sense : positive_unate;
+        timing_type : combinational;
+        cell_rise (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("2.0, 2.4", "2.4, 2.9");
+        }
+        cell_fall (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("2.0, 2.4", "2.4, 2.9");
+        }
+        rise_transition (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.3, 0.5", "0.5, 0.8");
+        }
+        fall_transition (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.3, 0.5", "0.5, 0.8");
+        }
+      }
+    }
+    pin (wr_data) {
+      direction : input;
+      capacitance : 0.005;
+      timing () {
+        related_pin : "clk";
+        timing_type : setup_rising;
+        rise_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.5, 0.6", "0.6, 0.7");
+        }
+        fall_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.5, 0.6", "0.6, 0.7");
+        }
+      }
+      timing () {
+        related_pin : "clk";
+        timing_type : hold_rising;
+        rise_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.0, 0.0", "0.0, 0.0");
+        }
+        fall_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.0, 0.0", "0.0, 0.0");
+        }
+      }
+    }
+    pin (wr_en) {
+      direction : input;
+      capacitance : 0.005;
+      timing () {
+        related_pin : "clk";
+        timing_type : setup_rising;
+        rise_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.4, 0.5", "0.5, 0.6");
+        }
+        fall_constraint (constraint_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.05, 0.5");
+          values ("0.4, 0.5", "0.5, 0.6");
+        }
+      }
+    }
+  }
+}

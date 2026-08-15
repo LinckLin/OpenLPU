@@ -1,0 +1,56 @@
+# ============================================================================
+# synth.ys — QCore P10 ASIC synthesis (Yosys + sky130_fd_sc_hd).
+#
+# STATUS (honest): the full-size instance (synth_top -> command_processor ->
+# vector_engine @ MAX_VEC=128) does NOT currently pass the Yosys 0.44 frontend:
+# vector_engine.sv uses runtime-length `for` loops (`for (i = 0; i < len; i++)`
+# etc.), which Yosys rejects ("2nd expression of procedural for-loop is not
+# constant", asic/gen/vector_engine.sv:63).  preprocess.py does NOT rewrite
+# these vector/CP loops (it only desugars two softfloat loops); the full-size
+# physical elaboration is therefore covered by Verilator 4.038 (`verilator
+# --lint-only rtl/qcore_top.sv`), NOT by this script — see docs/p10/asic-report.md
+# §1/§7.  This script is retained as the intended full-size flow (below); the
+# gate-level numbers actually delivered in M9 use the constant-bound
+# representative tops instead (run_synth.sh / run_mac_synth.sh).
+#
+# Reads the frozen RTL snapshot (rtl/ref/asicsnap/, via the Yosys-compat
+# preprocessed copy asic/gen/ — see asic/preprocess.py) + asic/ synthesis top,
+# elaborates the physical-scale instance (MAX_VEC=128), and truly synthesizes
+# the logic to sky130 gates:
+#   * on-chip scratchpad SRAM (8 MiB) = black-box macro (sram_macro), estimated
+#     separately (NOT mapped to gates);
+#   * engine/CP working buffers (imem, accumulator, partial, seed, va/vb/vo,
+#     AR/C, rope tables) = mapped to flops (register arrays — real silicon);
+#   * all combinational datapath (softfloat FP32/BF16 units, 128-lane vector,
+#     matrix MAC, CP FSM/decode/issue, DMA, KV addrgen) = sky130 std cells.
+#
+read_verilog -sv \
+  asic/gen/qcore_pkg.sv \
+  asic/gen/softfloat.sv \
+  asic/gen/rope_lut.sv \
+  asic/gen/kv_addrgen.sv \
+  asic/gen/dma_engine.sv \
+  asic/gen/matrix_engine.sv \
+  asic/gen/vector_engine.sv \
+  asic/gen/command_processor.sv \
+  asic/sram_macro.sv \
+  asic/synth_top.sv
+
+hierarchy -top synth_top -check
+proc
+
+# RAMs -> register arrays (flops).  The 8 MiB scratchpad stays a black box.
+memory
+opt
+
+techmap
+opt
+dfflibmap -liberty $LIB
+abc -liberty $LIB -D 2000
+opt_clean
+
+stat -liberty $LIB
+stat -width
+
+mkdir -p asic/netlist
+write_verilog -noattr -noexpr asic/netlist/synth_top.v

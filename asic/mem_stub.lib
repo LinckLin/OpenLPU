@@ -1,0 +1,125 @@
+/* ============================================================================
+ * mem_stub.lib — QCore SRAM macro black-box timing model (P10 / M9 STA).
+ *
+ * Models the 8 MiB scratchpad `sram_macro` (see asic/sram_macro.sv) with a
+ * conservative 130 nm SRAM access profile so OpenSTA can time the paths that
+ * cross the macro.  The co-sim models the read combinationally; a compiled
+ * SRAM macro adds the access time modelled here (addr -> rd_data, ~2 ns) and
+ * write setup/hold.  Area/power of the macro are reported separately in
+ * docs/p10/asic-report.md (OpenRAM / density), so `area` is 0 here.
+ * ==========================================================================*/
+library (qcore_mem_stub) {
+  delay_model : table_lookup;
+  time_unit : "1ns";
+  voltage_unit : "1V";
+  current_unit : "1mA";
+  pulling_resistance_unit : "1kohm";
+  capacitive_load_unit (1.0, "pf");
+  leakage_power_unit : "1nW";
+
+  lu_table_template (delay_2x2) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.05, 0.5");
+    index_2 ("0.001, 0.01");
+  }
+  power_lut_template (energy_2x2) {
+    variable_1 : input_transition_time;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.05, 0.5");
+    index_2 ("0.001, 0.01");
+  }
+
+  cell (sram_macro) {
+    area : 0.0;
+    pin (clk) {
+      direction : input;
+      clock : true;
+      capacitance : 0.01;
+    }
+    pin (addr) {
+      direction : input;
+      capacitance : 0.005;
+    }
+    pin (rd_data) {
+      direction : output;
+      function : "addr";
+      max_capacitance : 0.05;
+      timing () {
+        related_pin : "addr";
+        timing_sense : positive_unate;
+        timing_type : combinational;
+        cell_rise (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("2.0, 2.4", "2.4, 2.9");
+        }
+        cell_fall (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("2.0, 2.4", "2.4, 2.9");
+        }
+        rise_transition (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.3, 0.5", "0.5, 0.8");
+        }
+        fall_transition (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.3, 0.5", "0.5, 0.8");
+        }
+      }
+    }
+    pin (wr_data) {
+      direction : input;
+      capacitance : 0.005;
+      timing () {
+        related_pin : "clk";
+        timing_type : setup_rising;
+        rise_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.5, 0.6", "0.6, 0.7");
+        }
+        fall_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.5, 0.6", "0.6, 0.7");
+        }
+      }
+      timing () {
+        related_pin : "clk";
+        timing_type : hold_rising;
+        rise_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.0, 0.0", "0.0, 0.0");
+        }
+        fall_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.0, 0.0", "0.0, 0.0");
+        }
+      }
+    }
+    pin (wr_en) {
+      direction : input;
+      capacitance : 0.005;
+      timing () {
+        related_pin : "clk";
+        timing_type : setup_rising;
+        rise_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.4, 0.5", "0.5, 0.6");
+        }
+        fall_constraint (delay_2x2) {
+          index_1 ("0.05, 0.5");
+          index_2 ("0.001, 0.01");
+          values ("0.4, 0.5", "0.5, 0.6");
+        }
+      }
+    }
+  }
+}

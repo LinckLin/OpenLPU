@@ -1,0 +1,37 @@
+# --- 本地环境与缓存 ---
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# --- 可再生成的大产物 ---
+golden/
+rtl/ref/asicsnap/
+asic/gen/
+asic/dc/db/
+asic/dc/gen/
+asic/dc/gen_full/
+asic/vcs/simv
+asic/vcs/csrc*/
+asic/vcs/gen/
+alib-52/
+
+# --- 工具痕迹与构建产物 ---
+abc.history
+.history_sta
+*.log
+*.jou
+*.pvl
+*.pvk
+*.syn
+*.mr
+*.svf
+lc_output.txt
+
+# --- Verilator 构建目录（obj_*/ 前缀与 *_obj/ 后缀均覆盖） ---
+obj_*/
+*_obj/
+
+# --- VCS/DA 运行时目录（.daidir 内含环境快照，可能携带凭据，务必不上传） ---
+*.daidir/

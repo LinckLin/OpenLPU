@@ -1,0 +1,7 @@
+QSim baseline snapshot (P7 M6, co-sim reference)
+Frozen: 2026-08-14
+Source: qsim/ (executor.py, timing.py, test_m2a.py, test_vector_kv.py, test_isa_fields.py)
+Contract: co-sim cycle/numeric alignment is anchored to this snapshot (plans/p6-p7-plan.md v2).
+M6 终轮整改（2026-08-15）：executor.py `_rope_apply` inv_freq/angles 链改为显式
+fp32（`np.power`/`np.divide`/`np.multiply` 逐 op `dtype=np.float32`），评审裁决
+（fp32 为 spec 04 §3.2 冻结语义）；与 qsim/executor.py 保持一致，数值逐位不变。

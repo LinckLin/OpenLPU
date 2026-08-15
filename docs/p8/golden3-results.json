@@ -1,0 +1,629 @@
+{
+  "layer": 0,
+  "cache": "decode_seq1_cache1024",
+  "results": [
+    {
+      "name": "rmsnorm_in",
+      "trace_ok": true,
+      "total_cycles": 132,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "rmsnorm_in"
+    },
+    {
+      "name": "rmsnorm_mlp",
+      "trace_ok": true,
+      "total_cycles": 132,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 7,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "rmsnorm_mlp"
+    },
+    {
+      "name": "attn_qknorm",
+      "trace_ok": true,
+      "total_cycles": 388,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "op_class": "attn_qknorm"
+    },
+    {
+      "name": "attn_qkv_q",
+      "trace_ok": true,
+      "total_cycles": 1593,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 8,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 2048
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 8,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 2048,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 2.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 8,
+        "max_ulp_tiny": 2.0,
+        "pass": true,
+        "n_elem": 2048
+      },
+      "op_class": "attn_qkv"
+    },
+    {
+      "name": "attn_qkv_k",
+      "trace_ok": true,
+      "total_cycles": 1056,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "attn_qkv"
+    },
+    {
+      "name": "attn_qkv_v",
+      "trace_ok": true,
+      "total_cycles": 1056,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "attn_qkv"
+    },
+    {
+      "name": "attn_rope",
+      "trace_ok": true,
+      "total_cycles": 195,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "op_class": "attn_rope"
+    },
+    {
+      "name": "attn_score",
+      "trace_ok": true,
+      "total_cycles": 19116,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 16400
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 16400,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 16400
+      },
+      "op_class": "attn_score"
+    },
+    {
+      "name": "attn_softmax",
+      "trace_ok": true,
+      "total_cycles": 4513,
+      "qsim_pytorch": {
+        "max_ulp": 27.0,
+        "max_ulp_normal": 5.0,
+        "n_tiny": 15164,
+        "max_ulp_tiny": 27.0,
+        "pass": false,
+        "n_elem": 16400
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 15163,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 16400,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 27.0,
+        "max_ulp_normal": 5.0,
+        "n_tiny": 15164,
+        "max_ulp_tiny": 27.0,
+        "pass": false,
+        "n_elem": 16400
+      },
+      "op_class": "attn_softmax"
+    },
+    {
+      "name": "attn_ctx",
+      "trace_ok": true,
+      "total_cycles": 2115,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 45,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 2048
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 45,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 2048,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 45,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 2048
+      },
+      "op_class": "attn_ctx"
+    },
+    {
+      "name": "attn_o",
+      "trace_ok": true,
+      "total_cycles": 1576,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 5,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "attn_o"
+    },
+    {
+      "name": "mlp_gate",
+      "trace_ok": true,
+      "total_cycles": 2129,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 3,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "op_class": "mlp_gate"
+    },
+    {
+      "name": "mlp_up",
+      "trace_ok": true,
+      "total_cycles": 2129,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 9,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 9,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 3072,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 9,
+        "max_ulp_tiny": 1.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "op_class": "mlp_up"
+    },
+    {
+      "name": "mlp_silu",
+      "trace_ok": true,
+      "total_cycles": 292,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 110,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 110,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 110,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 3072
+      },
+      "op_class": "mlp_silu"
+    },
+    {
+      "name": "mlp_down",
+      "trace_ok": true,
+      "total_cycles": 2096,
+      "qsim_pytorch": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 13,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 1.0,
+        "max_ulp_normal": 1.0,
+        "n_tiny": 13,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 13,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "mlp_down"
+    },
+    {
+      "name": "residual_attn",
+      "trace_ok": true,
+      "total_cycles": 19,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 6,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 6,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 6,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "residual_attn"
+    },
+    {
+      "name": "residual_mlp",
+      "trace_ok": true,
+      "total_cycles": 19,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "residual_mlp"
+    },
+    {
+      "name": "hidden_L00",
+      "trace_ok": true,
+      "total_cycles": 19,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 10,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "hidden",
+      "layer": 0
+    },
+    {
+      "name": "hidden_L13",
+      "trace_ok": true,
+      "total_cycles": 19,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 1,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "hidden",
+      "layer": 13
+    },
+    {
+      "name": "hidden_L27",
+      "trace_ok": true,
+      "total_cycles": 19,
+      "qsim_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "rtl_qsim": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024,
+        "trace_ok": true
+      },
+      "rtl_pytorch": {
+        "max_ulp": 0.0,
+        "max_ulp_normal": 0.0,
+        "n_tiny": 2,
+        "max_ulp_tiny": 0.0,
+        "pass": true,
+        "n_elem": 1024
+      },
+      "op_class": "hidden",
+      "layer": 27
+    }
+  ]
+}

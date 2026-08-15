@@ -1,0 +1,6 @@
+model: Qwen/Qwen3-0.6B (BF16, eager)
+prompt: Explain the concept of a transformer neural network and its attention mechanism:
+num new tokens: 20
+prompt token ids: [840, 20772, 279, 7286, 315, 264, 42578, 29728, 3922, 323, 1181, 6529, 16953, 25]
+new token ids (HF greedy): [3555, 374, 279, 6672, 1948, 264, 42578, 323, 264, 29728, 3922, 304, 4586, 30, 3555, 374, 279, 3476, 315, 279]
+decoded:  What is the difference between a transformer and a neural network in general? What is the role of the

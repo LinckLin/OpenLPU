@@ -1,0 +1,17 @@
+# synth_datapath.ys — QCore FP datapath representative synthesis.
+# Usage: yosys -p "read_liberty -lib <lib>" -s asic/synth_datapath.ys
+#        (the liberty is referenced via $LIB; run via run_synth.sh)
+read_verilog -sv -I asic/gen asic/gen/softfloat.sv asic/synth_datapath.sv
+hierarchy -top synth_datapath -check
+proc
+memory
+opt
+techmap
+opt
+dfflibmap -liberty $LIB
+abc -liberty $LIB
+opt_clean
+stat -liberty $LIB
+stat -width
+mkdir -p asic/netlist
+write_verilog -noattr -noexpr asic/netlist/synth_datapath.v

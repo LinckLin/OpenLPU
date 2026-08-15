@@ -1,0 +1,221 @@
+{
+  "results": [
+    {
+      "name": "VADD",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 5
+    },
+    {
+      "name": "VSUB",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 5
+    },
+    {
+      "name": "VMUL",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 6
+    },
+    {
+      "name": "VDIV",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 13
+    },
+    {
+      "name": "VMAX",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 5
+    },
+    {
+      "name": "VADD_bcast",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 5
+    },
+    {
+      "name": "VMUL_bcast",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 6
+    },
+    {
+      "name": "VRECIP",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 10
+    },
+    {
+      "name": "VRSQRT",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 10
+    },
+    {
+      "name": "VSILU",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 12
+    },
+    {
+      "name": "VMOV",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 4
+    },
+    {
+      "name": "VEXP",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 11
+    },
+    {
+      "name": "VSCALE_bf16",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 4,
+      "total_cycles": 6
+    },
+    {
+      "name": "VMASK",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 5
+    },
+    {
+      "name": "VREDUCE_SUM",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 12
+    },
+    {
+      "name": "VREDUCE_MAX",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 12
+    },
+    {
+      "name": "ROPE",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 20
+    },
+    {
+      "name": "ROPE_pos1024",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 20
+    },
+    {
+      "name": "ROPE_pos8192",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 20
+    },
+    {
+      "name": "ROPE_pos40960_boundary",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 8.0,
+      "n_trace": 5,
+      "total_cycles": 20
+    },
+    {
+      "name": "RMSNORM",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 5,
+      "total_cycles": 20
+    },
+    {
+      "name": "QUANT_DEQUANT",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 7,
+      "total_cycles": 15
+    },
+    {
+      "name": "KV_APPEND_LOAD",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 8,
+      "total_cycles": 211
+    },
+    {
+      "name": "KV_STORE_GATHER",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 8,
+      "total_cycles": 231
+    },
+    {
+      "name": "GEMM_1tile_BF16_M128",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 17,
+      "total_cycles": 863
+    },
+    {
+      "name": "GEMM_1tile_INT8_M8",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 21,
+      "total_cycles": 595
+    },
+    {
+      "name": "GEMV_1tile_BF16_DC",
+      "byte_exact": true,
+      "trace_ok": true,
+      "max_ulp": 0.0,
+      "n_trace": 17,
+      "total_cycles": 524
+    }
+  ],
+  "all_byte_exact": true
+}
