@@ -35,3 +35,11 @@ obj_*/
 
 # --- VCS/DA 运行时目录（.daidir 内含环境快照，可能携带凭据，务必不上传） ---
 *.daidir/
+
+# --- SMIC28 SRAM 宏物理视图（GDS2/CDL 版图，MB 级可再生，GEN.md 有生成命令） ---
+asic/sram_macros/**/*.gds2
+asic/sram_macros/**/*.cdl
+asic/sram_macros/**/*.clf
+# --- DC 综合网表（MB 级可再生）；.rpt 时序报告保留 ---
+asic/dc/reports/*.v
+asic/dc/reports/*.STALE-presto

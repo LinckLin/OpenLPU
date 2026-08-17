@@ -17,6 +17,8 @@
 
 > **DC/VCS 补充（§10/§11）**：Synopsys DC O-2018.06-SP1 compile_ultra（基元级）与
 > VCS-MX O-2018.09-SP2 功能仿真（27 用例与 Verilator 字节级一致）已交付；
+> **O6 全设计扩展：synth_top 在 DC 侧 elaborate + link + compile_ultra 全跑通**
+> （控制平面 1.000 mm² / Fmax 136 MHz，数字核/SRAM 按物理宏黑盒，§10.5）。
 > DC 运行需 license 27000@bics109，VCS 需 snps-centos7 兼容命名空间（详见 §10/§11 与 README）。
 
 ## 1. Elaboration（验收项 1）
@@ -283,10 +285,11 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 
 ## 10. DC 综合流程（Design Compiler O-2018.06-SP1，P10 §10）
 
-> 状态：DcSyn 交付。Synopsys Design Compiler（DC Ultra）O-2018.06-SP1 +
-> sky130 5-corner liberty。代表数据通路（synth_datapath / mac_bf16）跑通
-> compile_ultra 并出 tt/ss 两 corner 时序/漏电/面积；与 OpenSTA 同口径交叉验证；
-> 全设计 synth_top 综合以「兼容性界定」如实收尾。
+> 状态：DcSyn 交付；O6 全设计扩展。Synopsys Design Compiler（DC Ultra）
+> O-2018.06-SP1 + sky130 5-corner liberty。代表数据通路（synth_datapath / mac_bf16）
+> 跑通 compile_ultra 并出 tt/ss 两 corner 时序/漏电/面积；与 OpenSTA 同口径交叉验证；
+> **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
+> 控制平面真综合，§10.5）。
 
 ### 10.1 工具与 license（步骤 1）
 
@@ -319,15 +322,18 @@ sky130 liberty（`~/.eda/liberty/`，5 corner，452 cell，含 `internal_power` 
 `mem_stub.lib`（DC-local）、`db/`、`gen/`、`gen_full/`、`reports/`。
 
 流程 = `elaborate → compile_ultra → report_timing/area/power`（1 ns 探针时钟、0 输入/
-输出延时、Fmax = 1/arrival，与 sta.tcl 同口径）。DC Presto 前端对冻结 RTL 有 **4 类
-不兼容**，前 3 类已 desugar（语义中性），第 4 类是全设计物理边界（见 §10.5）：
+输出延时、Fmax = 1/arrival，与 sta.tcl 同口径）。DC Presto 前端对冻结 RTL 有 **5 类
+不兼容**，前 3 类已 desugar（语义中性）；第 4 类（运行期 `for` + 推断 RAM）与第 5 类
+（co-sim 端口宽度失配）在本节点（O6）一并处理，全设计就此 elaborate + link +
+compile_ultra 跑通（见 §10.5）：
 
 | # | 构造 | 位置 | DC 表现 | desugar |
 |---|---|---|---|---|
 | 1 | `k = -1;` 循环跳出（Yosys 无 `break` 的惯用法） | synth_datapath.sv×2、softfloat.sv×2 | **dc_shell 死循环**（6 行最小复现确认；`break` 瞬时返回） | `k = -1;` → `break;` |
 | 2 | 变长边界 `for`（sticky-bit OR） | softfloat.sv×2 | ELAB-900「Loop exceeded maximum iteration limit」 | 定界 + 运行时 guard（同 preprocess.py） |
 | 3 | 模块级「声明在使用之后」（SV declaration anywhere） | command_processor 等 8 模块 | VER-954/VER-956（先隐式声明后重定义） | 声明上提（hoist） |
-| 4 | 运行期 `for (i < len)` 组合循环 + 推断 RAM | vector_engine/matrix_engine（co-sim 功能模型） | 资源/语义边界 | **不 desugar**（见 §10.5） |
+| 4 | 运行期 `for (i < len)` 组合循环 + 推断 RAM | vector_engine/matrix_engine（co-sim 功能模型） | 资源/语义边界（~1.7 M 触发器 + 128-lane softfloat） | **黑盒化**（数字核 + 存储 → `(* blackbox *)` 宏，见 §10.5） |
+| 5 | co-sim 端口宽度失配（vector_engine `len` 32b vs CP 16b） | vector_engine↔command_processor | LINK-3/LINK-25（linker 拒绝） | 黑盒端口收窄对齐 CP（§10.5） |
 
 ### 10.4 DC vs OpenSTA 交叉验证（步骤 4）
 
@@ -369,38 +375,64 @@ DC compile_ultra 结果（同口径 1 ns 探针时钟，`report_timing` data arr
 漏电 ss(100 °C) 较 tt(25 °C) 高 ~1300×，与 liberty 一致（NAND2 cell_leakage 0.0021 nW
 → 2.27 nW）。
 
-### 10.5 全设计 synth_top（步骤 5，兼容性界定）
+### 10.5 全设计 synth_top（步骤 5，全设计 elaborate + compile_ultra 跑通）
 
 `synth_top` = command_processor@MAX_VEC=128 + 8 MiB scratchpad SRAM 黑盒。SRAM 按
 **空模块黑盒 + set_dont_touch**（`sram_macro.sv` 空模块；`asic/dc/mem_stub.lib` 的
 时序模型因 LC 2018 不支持标量 pin 上的 `bus_type`（LBDB-76）无法表达 23/8 位总线，
 故 DC 侧不链时序库、以空模块黑盒为准；OpenSTA 继续用原 `asic/mem_stub.lib` 不变）。
 
-应用 §10.3 前 3 类 desugar 后，DC 能顺序 elaborate `synth_top → command_processor →
-sram_macro → matrix_engine`，但 **在 matrix_engine 展开时被资源上限终止**（16384 项
-推断 RAM → ~512 K 触发器 + vector_engine 128-lane × softfloat 组合展开）。根因与 §7
-一致：co-sim 功能模型用 O(1) 随机访问推断 RAM 与运行期 `for (i < len)` 组合循环，
-**不表达 128-lane 物理数据通路语义**，故全尺寸物理实例不是门级综合对象；代表基元
-（§10.4）才是物理计算单元的 DC 口径。
+**本节点更进一步（O6）**：§10.3 第 4 类不兼容（运行期 `for` + 推断 RAM）此前「不
+desugar」，卡死在 matrix_engine 展开。根因是 co-sim 功能模型的**存储与数字核被 DC
+展开成触发器 / 128-lane softfloat**（matrix_engine 4 组推断 RAM 共 53248×32 ≈ 1.7 M
+触发器 + vector_engine 128-lane 组合展开）。`hoist_dc.py` 新增**第 4 类 desugar
+（语义中性，只写 gen_full/，rtl/ 不动）**——把物理上本就是宏的存储与数字核映射为黑盒：
 
-**结论（如实）**：DC 综合**代表基元成功**（tt/ss 两 corner 时序/漏电/面积，§10.4）；
-**全设计合成以兼容性界定收尾**（前端 4 类不兼容中 3 类已 desugar、第 4 类为 §7 的
-物理语义边界），非「流程未跑通」。
+| # | 构造 | 位置 | 原 DC 表现 | desugar |
+|---|---|---|---|---|
+| 4a | 阵列 acc/partial/cin/scale 推断 RAM + 1-MAC/cycle 核心 | matrix_engine | 16384×3+4096 项 RAM → ~1.7 M 触发器，elaborate 卡死 | 整模块 `(* blackbox *)`（systolic array 宏；MAC 基元 mac_bf16/mac_int8 见 §10.4） |
+| 4b | 128-lane × softfloat 运行期 `for` 组合核心 | vector_engine | 128-lane 组合展开（含 fp32_div/exp 迭代单元） | 整模块 `(* blackbox *)`（128-lane datapath 宏；FP 基元 synth_datapath 见 §10.4） |
+| 4c | 指令流 `imem [0:4095]` 推断 RAM | command_processor | 4096×128 → ~512 K 触发器 | `bb_sram.sv`（1 同步写 + 1 组合读 SRAM 宏） |
+
+另修复 **1 处 co-sim 端口宽度失配（新增第 5 类，如实记录）**：vector_engine 端口
+`len` 声明 32 bit、CP 驱动 16 bit——Verilator 静默加宽、DC linker 报 LINK-3/LINK-25
+（上一版 elaborate 从未走到 vector_engine 链接故未暴露）。黑盒端口 `len` 收窄为
+16 bit 对齐 CP（co-sim rtl/ 不动，黑盒为 DC-only 副本）。
+| design | corner | 关键路径 | Fmax | 面积 (µm² / mm²) | 漏电 | 单元 | 黑盒 |
+|---|---|---|---|---|---|---|---|
+| synth_top | tt_025C_1v80 | 7.33 ns（len_reg[2]→hbm_addr[33]） | **136 MHz** | 1000498 / **1.000 mm²** | 455.3 nW | 98548（21036 seq + 77512 comb） | sram_macro + matrix_engine + vector_engine + bb_sram（0 面积，不映射） |
+| synth_top | ss_100C_1v60 | 13.91 ns（len_reg[1]→hbm_addr[34]） | **72 MHz** | 1031744 / **1.032 mm²** | 588.4 µW | 107021（21036 seq + 85985 comb） | 同上 |
+
+面积 **1.000 mm² 为控制平面**（CP FSM/译码/取指/字节级 marshalling + AR/C/va/vb/
+a_slice/b_slice 寄存器文件 + dma_engine + kv_addrgen），引擎与存储为黑盒（面积按 §4
+SRAM 估算 + §10.4 基元口径另计）。关键路径 7.33 ns 是控制平面**组合地址译码深度**
+（未流水化的 co-sim 模型），Fmax ≈ 136 MHz 如实——与 §10.4 流水化基元 331 MHz 分属
+不同口径（控制平面 vs 数据通路基元）。
+
+**结论（如实）**：全设计 synth_top 在 DC 侧 **elaborate + link + compile_ultra 全部
+跑通**（前 3 类 desugar + 第 4 类存储/数字核黑盒化 + 第 5 类端口宽度修正），产出控制
+平面时序/面积/漏电报告；矩阵/向量数字核与 SRAM 按物理宏边界黑盒（基元已在 §10.4
+真综合），**比原现状（卡 matrix_engine、无全设计报告）更进一步**。
 
 ### 10.6 交付物与需评审项
-
 `asic/dc/` 交付：`run_dc.sh` / `dc_flow.tcl` / `dc_top.tcl` / `desugar_dc.py` /
-`hoist_dc.py` / `clean_lib.py` / `sta_dc.tcl` / `mem_stub.lib`（DC-local）+ `db/`
-（tt/ss `.db` + mem_stub.db）+ `gen/` / `gen_full/`（desugar 产物）+ `reports/`
-（4 份 rpt + 4 份网表 .v）。
+`hoist_dc.py`（新增第 4 类存储/数字核黑盒化 + 第 5 类端口宽度修正）/ `clean_lib.py` /
+`sta_dc.tcl` / `mem_stub.lib`（DC-local）/ `bb_sram.sv`（指令流 SRAM 黑盒）+ `db/`
+（tt/ss `.db` + mem_stub.db）+ `gen/` / `gen_full/`（desugar 产物，含黑盒版
+matrix_engine/vector_engine）+ `reports/`（基元 4 份 rpt + 4 份网表 + 全设计
+synth_top tt/ss 2 份 rpt + 2 份网表 .v）。
 
 **需评审项**：
 1. **Fmax 口径重标定**：DC compile_ultra 对同一 liberty 的 Fmax(tt)=331 MHz，显著高于
    Yosys/OpenSTA 的 129 MHz（§9.3），差因为综合工具（§10.4 已证 STA 一致）；是否以
    DC 结果作为物理数据通路新口径（与 §9.5 的 BF16 重标定并列）。
-2. **全设计界定口径**：synth_top 全尺寸综合止于 co-sim 功能模型资源边界（§10.5），
-   是否接受「代表基元 DC 综合 + 全设计兼容性界定」作为 P10 §10 结论。
-3. **license/库兼容**：sky130 liberty 需 clean_lib.py 清理才可被 LC 读取、mem_stub.lib
+2. **全设计口径（O6 更新）**：全设计 synth_top 现已 elaborate + link + compile_ultra
+   跑通，但矩阵/向量数字核与 SRAM 按物理宏边界黑盒（基元在 §10.4 真综合）、控制平面
+   1.000 mm² / Fmax 136 MHz 为如实口径——是否接受「全设计控制平面真综合 + 数字核/SRAM
+   宏黑盒」作为 P10 §10 结论。
+3. **黑盒接口口径**：vector_engine 黑盒端口 `len` 由 32 bit 收窄为 16 bit 对齐 CP
+   （co-sim 静默加宽、DC linker 严格），属黑盒副本（gen_full/）语义中性修正，是否接受。
+4. **license/库兼容**：sky130 liberty 需 clean_lib.py 清理才可被 LC 读取、mem_stub.lib
    时序模型需 constraint 模板修正且 DC 侧改用空模块黑盒——两处库修正是否接受。
 
 ## 11. VCS 功能仿真（VCS-MX O-2018.09-SP2，P10 §11）

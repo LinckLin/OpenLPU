@@ -43,6 +43,9 @@ NEEDED = [
     "dma_engine.sv",
     "kv_addrgen.sv",
     "rope_lut.sv",
+    "kv_bfeed.sv",
+    "kv_quantdequant.sv",
+    "sram_macros.sv",
 ]
 
 

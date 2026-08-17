@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """hoist_dc.py — prepare rtl/ref/asicsnap sources for DC Presto (full design).
 
-Two DC Presto incompatibilities are fixed, both semantically neutral:
+Three DC Presto / resource incompatibilities are fixed, all semantically neutral:
 
   1. Loop-break idiom.  The frozen softfloat.sv uses the Yosys/Verilator-friendly
      leading-one-detect loop
@@ -16,6 +16,14 @@ Two DC Presto incompatibilities are fixed, both semantically neutral:
      to precede first use (VER-954/VER-956).  Fix: hoist module-body signal
      declarations (`logic`/`integer`/`wire`/`reg`) to the top of each module body
      (right after the `import` lines).
+
+  3. Full-design storage/core black-boxing.  The co-sim numeric cores
+     matrix_engine / vector_engine use O(1) random-access inferred RAMs and
+     runtime lane loops; DC would infer them as ~1.7 M flip-flops and unroll the
+     128-lane softfloat datapath (P10 §10.5 resource wall).  They become
+     `(* blackbox *)` macros, and the CP instruction array becomes a bb_sram
+     black box (1 sync write + 1 combinational read), so the full design
+     elaborates + links + compile_ultra runs through.
 
 The frozen modules use brace-less bodies (Verilog-2001 style) and 2-space-indent
 module-level declarations, so the hoist keys on the exact-2-space indent.
@@ -34,7 +42,7 @@ SRC = REPO / "rtl" / "ref" / "asicsnap"
 ASIC = REPO / "asic"
 DST = ASIC / "dc" / "gen_full"
 
-DECL_RE = re.compile(r'^  (logic|integer|wire|reg)\b')
+DECL_RE = re.compile(r'^  (logic|integer|wire|reg|localparam)\b')
 PORTS_END_RE = re.compile(r'^\s*\);\s*$')
 IMPORT_RE = re.compile(r'^\s*import\b')
 LOOP_BREAK_RE = re.compile(r'\bk\s*=\s*-1\s*;')
@@ -111,25 +119,150 @@ def process_module(text):
     return '\n'.join(out) + '\n', changed
 
 
+def make_blackbox(text):
+    """Strip a numeric-core module to a DC black box (keep module/params/ports).
+
+    matrix_engine / vector_engine are the co-sim functional models of the
+    systolic array and the 128-lane datapath.  Their O(1) random-access inferred
+    RAMs (acc/partial/cin/scale) and runtime `for (i < len)` lane loops do not
+    express gate-level logic -- DC would infer the RAMs as ~1.7 M flip-flops and
+    unroll the 128-lane softfloat datapath (P10 §10.5 resource wall).  Both are
+    physical macros: the systolic array's MAC primitives (mac_bf16/mac_int8) and
+    the vector datapath's FP primitives (synth_datapath) are DC-synthesized
+    separately (asic-report.md §10.4).  Here the full design keeps them as black
+    boxes so the command-processor control plane elaborates + compiles past the
+    storage expansion.
+    """
+    lines = text.split('\n')
+    n = len(lines)
+    start = next(i for i, ln in enumerate(lines) if re.match(r'^module\s+\w+', ln))
+    name = re.match(r'^module\s+(\w+)', lines[start]).group(1)
+    header = []
+    i = start
+    while i < n:
+        header.append(lines[i])
+        i += 1
+        if PORTS_END_RE.match(lines[i - 1]):
+            break
+    # Known co-sim port-width mismatches: the CP drives `len` as 16 bits while
+    # the vector_engine port is declared [31:0]; Verilator widens silently, DC's
+    # linker (LINK-3) does not.  Narrow the black-box port to match the CP.
+    if name == 'vector_engine':
+        header = [ln.replace('input  logic [31:0] len,', 'input  logic [15:0] len,')
+                  for ln in header]
+    guard = name.upper() + '_SV'
+    bb = [
+        f'`ifndef {guard}',
+        f'`define {guard}',
+        '',
+        '// DC black box (hoist_dc.py: numeric-core macro; primitives in §10.4).',
+        '(* blackbox *)',
+    ]
+    bb.extend(header)
+    bb.append('endmodule')
+    bb.append('')
+    bb.append(f'`endif // {guard}')
+    return '\n'.join(bb) + '\n'
+
+
+def make_blackbox_sram(text):
+    """Convert the behavioral SMIC28 macro models to DC black boxes.
+
+    sram_macros.sv (kh4096x64 / ang4096x64 / kn128x16) holds Verilator-friendly
+    inferred-RAM bodies (`logic [63:0] mem [0:4095]` + `always_ff`).  DC would
+    infer those as 4096x64 flip-flop banks — the exact storage wall this task
+    removes.  Keep each module header + port list (the macro pin interface),
+    tag it `(* blackbox *)`, and strip the body, so DC links the cells against
+    the compiled SMIC28 .lib (asic/dc/db/<macro>_<corner>.db) instead.
+    set_dont_touch is applied in dc_top.tcl.
+    """
+    lines = text.split('\n')
+    n = len(lines)
+    out = []
+    i = 0
+    while i < n:
+        if not re.match(r'^module\s+\w+', lines[i]):
+            out.append(lines[i])
+            i += 1
+            continue
+        out.append('(* blackbox *)')
+        # module header through the lone ');'
+        while i < n:
+            out.append(lines[i])
+            i += 1
+            if PORTS_END_RE.match(lines[i - 1]):
+                break
+        # skip the inferred-RAM body up to endmodule, then close the stub
+        while i < n and not re.match(r'^\s*endmodule\b', lines[i]):
+            i += 1
+        out.append('endmodule')
+        i += 1
+    return '\n'.join(out) + '\n'
+
+def blackbox_imem(text):
+    """Remap the command-processor instruction array to a bb_sram black box.
+
+    `logic [127:0] imem [0:NINST-1]` would infer as a 4096x128 flip-flop bank;
+    a real ASIC keeps the instruction stream in an SRAM, so the desugared copy
+    instantiates bb_sram (1 sync write + 1 combinational read) instead.  The
+    co-sim array in rtl/ is untouched.
+    """
+    # 1) declaration -> read wire (kept at its hoisted position, before first use)
+    text = text.replace(
+        '  logic [127:0] imem [0:NINST-1];',
+        '  wire  [127:0] imem_rd;   // instruction word (black-box SRAM read)',
+    )
+    # 2) drop the backdoor write always_ff (the macro samples we/waddr/wdata itself)
+    text = text.replace(
+        "\n  // instruction memory load (testbench backdoor)\n"
+        "  always_ff @(posedge clk) begin\n"
+        "    if (imem_we) imem[imem_waddr] <= imem_wdata;\n"
+        "  end\n",
+        "\n",
+    )
+    # 3) all combinational reads imem[pc] -> imem_rd
+    text = text.replace('imem[pc]', 'imem_rd')
+    # 4) instantiate the macro at the end of the module body (after every decl,
+    #    so pc / imem_rd are declared before use)
+    instance = (
+        "\n"
+        "  // instruction memory = black-box SRAM macro (physically SRAM, not flops).\n"
+        "  bb_sram #(.AW(12), .DW(128)) u_imem (\n"
+        "    .clk(clk), .we(imem_we), .waddr(imem_waddr), .wdata(imem_wdata),\n"
+        "    .raddr(pc[11:0]), .rdata(imem_rd)\n"
+        "  );\n"
+    )
+    idx = text.rfind('endmodule')
+    return text[:idx] + instance + text[idx:]
+
+
 def main() -> int:
     DST.mkdir(parents=True, exist_ok=True)
     nchanged = 0
     for f in sorted(SRC.glob('*.sv')):
+        name = f.name
         text = f.read_text()
-        if re.search(r'\bendmodule\b', text):
-            out_text, changed = process_module(text)
+        if name in ('matrix_engine.sv', 'vector_engine.sv'):
+            # Numeric cores -> black-box macros (P10 §10.5 storage/lane expansion).
+            out_text = make_blackbox(text)
+        elif name == 'sram_macros.sv':
+            # SMIC28 SRAM macros -> black boxes (timing from compiled .lib).
+            out_text = make_blackbox_sram(text)
+        elif name == 'command_processor.sv':
+            out_text, _ = process_module(text)   # loop-break + decl hoist
+            out_text = blackbox_imem(out_text)   # instruction array -> bb_sram
+        elif re.search(r'\bendmodule\b', text):
+            out_text, _ = process_module(text)
         else:
             # Package files (qcore_pkg/softfloat/rope_lut): loop fixes only.
-            original = text
             out_text = apply_varloop(text)
             out_text = LOOP_BREAK_RE.sub('break;', out_text)
-            changed = out_text != original
-        (DST / f.name).write_text(out_text)
-        if changed:
+        (DST / name).write_text(out_text)
+        if out_text != text:
             nchanged += 1
-            print(f'desugared: {f.name}')
-    # synth_top.sv / sram_macro.sv are DC-clean already; copy verbatim.
-    for name in ('synth_top.sv', 'sram_macro.sv'):
+            print(f'desugared: {name}')
+    # synth_top.sv / sram_macro.sv / bb_sram.sv are DC-clean already; copy verbatim.
+    for name in ('synth_top.sv', 'sram_macro.sv', 'bb_sram.sv'):
         (DST / name).write_text((ASIC / name).read_text())
     print(f'files desugared: {nchanged}')
     return 0

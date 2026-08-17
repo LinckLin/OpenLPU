@@ -6,14 +6,17 @@
 # set_dont_touch; its area/power stay the separate OpenRAM/density estimate.
 #
 # The engine RTL is the DC-desugared tree asic/dc/gen_full/ (see hoist_dc.py:
-# loop-break `k=-1`->`break`, variable-bound loop -> fixed bound + guard, and
-# module-level declaration hoist).  synth_top.sv / sram_macro.sv are copied
-# verbatim (DC-clean).
+# loop-break `k=-1`->`break`, variable-bound loop -> fixed bound + guard,
+# module-level declaration hoist, and the full-design third transform — the
+# co-sim numeric cores matrix_engine / vector_engine become `(* blackbox *)`
+# macros and the CP instruction array becomes a bb_sram black box).  synth_top.sv
+# / sram_macro.sv / bb_sram.sv are copied verbatim (DC-clean).
 #
 # NOTE: the engines are the *co-sim functional model* (runtime-bound loops,
 # inferred RAMs), NOT the physical 128-lane datapath — see asic-report.md §7.
-# This run records whether DC can elaborate/link/compile it and at what cost;
-# any frontend incompatibility or resource blow-up is reported honestly.
+# The numeric-core macros' primitives (mac_bf16/mac_int8, synth_datapath) are
+# DC-synthesized separately (§10.4); here the full design records whether DC can
+# elaborate/link/compile the control plane past the storage expansion (§10.5).
 #
 
 # Env:  DC_CORNER  tt_025C_1v80 | ss_100C_1v60
@@ -28,7 +31,9 @@ set dc_dir asic/dc
 set dw_dir /home/public/app/synopsys/syn/O-2018.06-SP1/libraries/syn
 set search_path [concat $search_path \
     [list . asic/dc/gen_full asic $dc_dir $dc_dir/db $dc_dir/reports $dw_dir]]
-set target_library  [list $dc_dir/db/sky130_fd_sc_hd__${corner}.db]
+set target_library  [list $dc_dir/db/sky130_fd_sc_hd__${corner}.db \
+                          $dc_dir/db/kh4096x64_${corner}.db \
+                          $dc_dir/db/kn128x16_${corner}.db]
 set synthetic_library [list dw_foundation.sldb]
 set link_library [concat {*} $target_library $synthetic_library]
 
@@ -40,12 +45,15 @@ puts "INFO: link_library=$link_library"
 # includes softfloat/matrix_engine/vector_engine/rope_lut/dma_engine/kv_addrgen);
 analyze -format sverilog asic/dc/gen_full/synth_top.sv
 analyze -format sverilog asic/dc/gen_full/sram_macro.sv
+analyze -format sverilog asic/dc/gen_full/bb_sram.sv
 elaborate synth_top
-link
-
-# --- SRAM macro: black box + dont_touch (plan step 5) ------------------------
+# --- black boxes: scratchpad SRAM, engine macros, instruction SRAM -----------
+# set_dont_touch keeps DC from optimizing/expanding them (plan step 5; §10.5).
+# kh4096x64 / kn128x16 are compiled SMIC28 SRAM macros (timing from the mapped
+# .db above; cross-technology reachability probe, NOT a tapeout corner).
 set_dont_touch [get_cells u_sram]
-set_dont_touch [get_references sram_macro]
+set_dont_touch [get_references {sram_macro matrix_engine vector_engine bb_sram \
+                                kh4096x64 kn128x16}]
 
 # --- constraints: 1 ns probe clock (sta.tcl caliber) ------------------------
 create_clock -name clk -period 1.0 [get_ports clk]

@@ -165,6 +165,21 @@ def _rope_apply(x: np.ndarray, pos: int, theta: float,
     return out.astype(np.float32)
 
 
+# B' (INT8-K QK-norm folded + INT4-V) KV scale metadata layout
+# (docs/perf-research/decision/bprime-impl.md; DECISION §5):
+#   - K static folded scale (k_norm): SRAM-resident, per (layer, head)
+#     128 x 2B signed BF16 = 256 B/head, 2 KB/layer, 56 KB total.  The
+#     dequant scale_c = k_norm[c] * s_q is SIGNED (k_norm may be negative);
+#     addressed via C_KVNORM_BASE (SRAM word addr).
+#   - per-token scale: HBM, per (layer, head) 4 B/token = [K s_q (BF16),
+#     V s_v (BF16)].  Slab stride = 8192 slots x 4 B = 32 KB.  Addressed
+#     via AR_KV_SCALE_BASE (HBM byte addr).
+C_KVNORM_BASE = 29      # SRAM word addr of static per-channel k_norm table
+AR_KV_SCALE_BASE = 62   # HBM byte addr of per-token scale slab region
+KV_SCALE_SLAB_STRIDE = 8192 * 4   # per (layer, head) per-token scale slab
+K_NORM_HEAD_BYTES = 128 * 2       # 128 signed BF16 per head
+
+
 class Executor:
     def __init__(self):
         self.sram = SramMemory()
@@ -175,6 +190,67 @@ class Executor:
         self.AR_KV_BASE = 63
         self.C_KV_POS = 30
         self.C_SLAB_SHIFT = 31
+        self._cur_word = 0
+
+    # -- B' KV scale addressing -----------------------------------------
+    def _kv_scale_addr(self, layer: int, head: int, pos: int) -> int:
+        """HBM byte addr of the per-token scale record [s_q, s_v] for
+        (layer, head) at token position `pos`."""
+        _, base = self.resolve(AR_KV_SCALE_BASE)
+        return base + (layer * 8 + head) * KV_SCALE_SLAB_STRIDE + pos * 4
+
+    def _k_norm_addr(self, layer: int, head: int) -> int:
+        """SRAM byte addr of the static per-channel folded scale (k_norm)
+        table for (layer, head): 128 signed BF16 = 256 B."""
+        wbase = self.C[C_KVNORM_BASE] * 16
+        return wbase + (layer * 8 + head) * K_NORM_HEAD_BYTES
+
+    # -- B' KV quantize/dequant (signed folded scale, hardware-faithful BF16)
+    @staticmethod
+    def _bf16_round(x: np.ndarray) -> np.ndarray:
+        """fp32 -> BF16 (RNE) -> fp32, hardware-faithful metadata rounding."""
+        return np.asarray(x, dtype=np.float32).astype(_BF16).astype(np.float32)
+
+    def _quantize_k_fold(self, k_unit: np.ndarray):
+        """Fold-quantize unit-norm pre-RoPE K [128] (fp32): returns
+        (q int8[128], s_q bf16 scalar).  s_q = bf16(max|k_unit|/127)."""
+        amax = float(np.abs(k_unit).max())
+        s_q = float(self._bf16_round(np.float32(max(amax / 127.0, 1e-6))))
+        q = np.clip(np.round(k_unit.astype(np.float32) / s_q), -127, 127)
+        return q.astype(np.int8), s_q
+
+    def _quantize_v_int4(self, v: np.ndarray):
+        """Per-head symmetric INT4 quantize V [128] (fp32): returns
+        (q4 int8[128] in [-7,7], s_v bf16 scalar)."""
+        amax = float(np.abs(v).max())
+        s_v = float(self._bf16_round(np.float32(max(amax / 7.0, 1e-6))))
+        q = np.clip(np.round(v.astype(np.float32) / s_v), -7, 7)
+        return q.astype(np.int8), s_v
+
+    def _dequant_k_fold(self, q: np.ndarray, s_q: float, k_norm: np.ndarray):
+        """K dequant: k_hat[c] = q[c] * (s_q * k_norm[c]) in fp32, signed.
+        Returns BF16-exact fp32 [128]."""
+        scale_c = self._bf16_round(np.float32(s_q) * k_norm.astype(np.float32))
+        return self._bf16_round(q.astype(np.float32) * scale_c)
+
+    def _dequant_v_int4(self, q4: np.ndarray, s_v: float):
+        """V dequant: v_hat[c] = q4[c] * s_v in fp32 -> BF16-exact fp32."""
+        return self._bf16_round(q4.astype(np.float32) * np.float32(s_v))
+
+    def _pack_int4(self, q4: np.ndarray) -> bytes:
+        """Pack int8 values in [-7,7] to 4-bit (even -> low nibble), matching
+        unpack_int4 / _write_vector packing bit order."""
+        v = (q4.astype(np.int8) & 0x0F).astype(np.uint8)
+        n = v.shape[0]
+        pairs = np.zeros((n + 1) // 2, dtype=np.uint8)
+        pairs[: v[0::2].shape[0]] = v[0::2]
+        pairs[: v[1::2].shape[0]] |= (v[1::2] << 4).astype(np.uint8)
+        return pairs.tobytes()
+
+    @staticmethod
+    def _bf16_scalar(f: float) -> bytes:
+        return np.asarray(np.float32(f), dtype=np.float32).astype(_BF16).tobytes()
+
 
     # -- addressing -----------------------------------------------------
     def resolve(self, ar_idx: int) -> tuple[str, int]:
@@ -321,6 +397,7 @@ class Executor:
         assert len(program) % 16 == 0
         for off in range(0, len(program), 16):
             word = int.from_bytes(program[off:off + 16], "little")
+            self._cur_word = word
             d = I.decode_inst(word)
             if not d["engine_tag_valid"]:
                 raise ValueError(
@@ -420,11 +497,22 @@ class Executor:
         transpose_a = d["transpose_A"]
         transpose_b = d["transpose_B"]
 
+        # B' B-feed fusion (CD[31] KV_QUANT): B operand is quantized KV, read
+        # inline (dequant + optional RoPE) instead of the SRAM/weight path.
+        cdv = self.C[d["CD"]]
+        if (cdv >> 31) & 1:
+            kv_idx = (cdv >> 21) & 0x1FF          # (layer*8 + head)
+            rotate_k = (cdv >> 30) & 1
+            pos_base = (self._cur_word >> 5) & 0xFFFF
+            self._matrix_bprime(d, kv_idx, pos_base, rotate_k)
+            return
+
         # dequant scale descriptor
-        cd_mode, scale_dtype, scale_base = self._cd(self.C[d["CD"]])
         if dequant:
-            if cd_mode != 1:
+            if ((cdv >> 20) & 1) != 1:
                 raise NotImplementedError("only per-128-group dequant (CD mode=1)")
+            scale_dtype = I.DT_FP16 if (cdv >> 19) & 1 else I.DT_BF16
+            scale_base = (cdv & 0x7FFFF) << 4   # CD[18:0] SRAM word addr -> byte
             G = K // 128
             if K % 128:
                 raise ValueError("dequant requires K multiple of 128")
@@ -484,6 +572,85 @@ class Executor:
                                        row_stride_c, False)
                 C = prev.astype(np.float32) + C.astype(np.float32)
                 self.write_matrix(c_kind, c_addr, out_dtype, C, row_stride_c)
+
+
+    # -- B' B-feed reference (CD[31] KV_QUANT) --------------------------
+    def _matrix_bprime(self, d: dict, kv_idx: int, pos_base: int, rotate_k: bool):
+        """Quantized-KV B operand read inline: dequant (+ absolute RoPE for K),
+        then fp32 matmul in K order.  Bit-exact vs rtl/kv_bfeed.sv."""
+        M = d["M"]
+        N = d["N"]
+        K = d["K"]
+        batch = d["batch"] or 1
+        srcA = d["srcA"]
+        acc_init = d["acc_init"]
+        transpose_a = d["transpose_A"]
+        row_stride_a, batch_stride_a = self._stride(self.C[d["CA"]])
+        row_stride_b, batch_stride_b = self._stride(self.C[d["CB"]])
+        row_stride_c, batch_stride_c = self._stride(self.C[d["CC"]])
+        a_kind, a_base = self.resolve(d["ARa"])
+        b_kind, b_base = self.resolve(d["ARb"])
+        c_kind, c_base = self.resolve(d["ARc"])
+        scale_base = self._kv_scale_addr(kv_idx // 8, kv_idx % 8, 0)
+        k_norm_base = self._k_norm_addr(kv_idx // 8, kv_idx % 8)
+        out_dtype = I.DT_BF16
+        out_esz = DTYPE_SIZE[out_dtype]
+        if row_stride_c == 0:
+            row_stride_c = N * out_esz
+        theta = np.float32(1e6)
+        for b in range(batch):
+            A = self.read_matrix(a_kind, a_base + b * batch_stride_a, srcA,
+                                 M, K, row_stride_a, transpose_a)
+            bb = b_base + b * batch_stride_b
+            if rotate_k:
+                Bf = self._bfeed_k(bb, N, pos_base, scale_base, k_norm_base, theta)
+            else:
+                Bf = self._bfeed_v(bb, K, N, pos_base, scale_base)
+            C = np.matmul(A.astype(np.float32), Bf.astype(np.float32),
+                          dtype=np.float32)
+            c_addr = c_base + b * batch_stride_c
+            if acc_init:
+                self.write_matrix(c_kind, c_addr, out_dtype, C, row_stride_c)
+            else:
+                prev = self.read_matrix(c_kind, c_addr, out_dtype, M, N,
+                                        row_stride_c, False)
+                C = prev.astype(np.float32) + C.astype(np.float32)
+                self.write_matrix(c_kind, c_addr, out_dtype, C, row_stride_c)
+
+    def _bfeed_k(self, data_base: int, N: int, pos_base: int, scale_base: int,
+                 k_norm_base: int, theta) -> np.ndarray:
+        """K fold dequant + absolute RoPE -> B [128, N] (QK^T, transpose_B=1)."""
+        D = 128
+        k_hat = np.zeros((N, D), dtype=np.float32)
+        kn_buf = np.frombuffer(self.read_bytes("sram", k_norm_base, D * 2),
+                               dtype=_BF16).astype(np.float32)
+        for n in range(N):
+            pos = pos_base + n
+            s_q = float(np.frombuffer(
+                self.read_bytes("hbm", scale_base + pos * 4, 2),
+                dtype=_BF16).astype(np.float32)[0])
+            q = np.frombuffer(self.read_bytes("hbm", data_base + n * D, D),
+                              dtype=np.int8).astype(np.float32)
+            scale_c = self._bf16_round(np.float32(s_q) * kn_buf)
+            k_hat[n] = self._bf16_round(q * scale_c)
+        K_rot = np.zeros((N, D), dtype=np.float32)
+        for n in range(N):
+            K_rot[n] = _rope_apply(k_hat[n:n + 1], pos_base + n, theta, _BF16)[0]
+        return K_rot.T.astype(np.float32)  # [D, N]
+
+    def _bfeed_v(self, data_base: int, K: int, N: int, pos_base: int,
+                 scale_base: int) -> np.ndarray:
+        """V INT4 per-token dequant -> B [K, N] (AV, transpose_B=0)."""
+        Bf = np.zeros((K, N), dtype=np.float32)
+        for k in range(K):
+            pos = pos_base + k
+            s_v = float(np.frombuffer(
+                self.read_bytes("hbm", scale_base + pos * 4 + 2, 2),
+                dtype=_BF16).astype(np.float32)[0])
+            q4 = unpack_int4(self.read_bytes("hbm", data_base + pos * 64, 64),
+                             128).astype(np.float32)
+            Bf[k] = self._dequant_v_int4(q4, s_v)
+        return Bf
 
     def _gemm_dequant(self, A: np.ndarray, B: np.ndarray, M, N, K, G,
                       scale_dtype, scale_base, w4: bool = False) -> np.ndarray:
@@ -669,27 +836,47 @@ class Executor:
             raise NotImplementedError(f"VECTOR opcode 0x{op:02X}")
         self._write_vector(d_kind, d_base, srcA, r)
 
+    def _kv_data_layout(self, dtype: int) -> tuple[int, int]:
+        """Per-token data bytes + byte-shift (stride = 1<<shift) for a KV
+        element dtype: BF16 256B/<<8, INT8 128B/<<7, INT4 64B/<<6."""
+        if dtype == I.DT_BF16:
+            return 256, 8
+        if dtype == I.DT_INT8:
+            return 128, 7
+        if dtype == I.DT_INT4:
+            return 64, 6
+        raise NotImplementedError(
+            f"KV dtype {I.DTYPE_NAMES.get(dtype, dtype)} unsupported")
+
     def _kv(self, d: dict):
         op = d["opcode"]
         layer = d["layer"]
         head = d["head"]
+        # B' dtype combination (protocol: KV generic header srcA/srcB carry
+        # K/V dtype codes; v0 fixed BF16).  srcA=K dtype, srcB=V dtype.
+        k_dt = d["srcA"]
+        v_dt = d["srcB"]
+        self._kv_data_layout(k_dt)  # validate dtype codes
+        self._kv_data_layout(v_dt)
         if op == I.OP_KV_APPEND:
             k_kind, k_addr = self.resolve(d["srcK"])
             v_kind, v_addr = self.resolve(d["srcV"])
             pos = self.C[self.C_KV_POS]
             k = self.read_bytes(k_kind, k_addr, 256)
             v = self.read_bytes(v_kind, v_addr, 256)
-            self.write_bytes("hbm", self._kv_slab_base(layer, head, 0) + (pos << 8), k)
-            self.write_bytes("hbm", self._kv_slab_base(layer, head, 1) + (pos << 8), v)
+            self._kv_write(layer, head, pos, k, v, k_dt, v_dt)
         elif op == I.OP_KV_STORE_BLOCK:
             k_kind, k_addr = self.resolve(d["srcK"])
             v_kind, v_addr = self.resolve(d["srcV"])
             pos_start = d["pos_start"]
-            nbytes = d["count"] * 256
-            k = self.read_bytes(k_kind, k_addr, nbytes)
-            v = self.read_bytes(v_kind, v_addr, nbytes)
-            self.write_bytes("hbm", self._kv_slab_base(layer, head, 0) + (pos_start << 8), k)
-            self.write_bytes("hbm", self._kv_slab_base(layer, head, 1) + (pos_start << 8), v)
+            count = d["count"]
+            k = self.read_bytes(k_kind, k_addr, count * 256)
+            v = self.read_bytes(v_kind, v_addr, count * 256)
+            for t in range(count):
+                self._kv_write(layer, head, pos_start + t,
+                               k[t * 256:(t + 1) * 256],
+                               v[t * 256:(t + 1) * 256],
+                               k_dt, v_dt)
         elif op == I.OP_KV_LOAD:
             dstK_kind, dstK_addr = self.resolve(d["dstK"])
             dstV_kind, dstV_addr = self.resolve(d["dstV"])
@@ -697,30 +884,91 @@ class Executor:
             if sel == 3:
                 raise ValueError("KV.LOAD sel=3 reserved")
             pos_start = d["pos_start"]
-            nbytes = d["count"] * 256
+            count = d["count"]
             if sel in (0, 2):
-                k = self.read_bytes("hbm",
-                                    self._kv_slab_base(layer, head, 0) + (pos_start << 8), nbytes)
-                self.write_bytes(dstK_kind, dstK_addr, k)
+                self._kv_read(layer, head, pos_start, count, 0, k_dt,
+                              dstK_kind, dstK_addr)
             if sel in (1, 2):
-                v = self.read_bytes("hbm",
-                                    self._kv_slab_base(layer, head, 1) + (pos_start << 8), nbytes)
-                self.write_bytes(dstV_kind, dstV_addr, v)
+                self._kv_read(layer, head, pos_start, count, 1, v_dt,
+                              dstV_kind, dstV_addr)
         elif op == I.OP_KV_GATHER:
             dst_kind, dst_addr = self.resolve(d["dst"])
             kv = d["sel"]  # 0=K, 1=V
             broadcast = d["broadcast"]
             pos_start = d["pos_start"]
-            nbytes = d["count"] * 256
-            data = self.read_bytes(
-                "hbm", self._kv_slab_base(layer, head, kv) + (pos_start << 8), nbytes)
-            self.write_bytes(dst_kind, dst_addr, data)
+            count = d["count"]
+            dt = k_dt if kv == 0 else v_dt
+            self._kv_read(layer, head, pos_start, count, kv, dt,
+                          dst_kind, dst_addr)
             if broadcast:
                 stride = self.C[d["Cstride"]] * 16  # word addr -> byte stride
+                nbytes = count * 256
+                data = self.read_bytes(dst_kind, dst_addr, nbytes)
                 for i in range(1, 4):  # GQA ×4
                     self.write_bytes(dst_kind, dst_addr + i * stride, data)
         else:
             raise NotImplementedError(f"KV opcode 0x{op:02X}")
+
+    def _kv_write(self, layer, head, pos, k_bf16: bytes, v_bf16: bytes,
+                  k_dt, v_dt):
+        """Quantize-on-write: BF16 K (fold) / V (INT4) -> data + scale."""
+        k_base = self._kv_slab_base(layer, head, 0)
+        v_base = self._kv_slab_base(layer, head, 1)
+        scale_addr = self._kv_scale_addr(layer, head, pos)
+        # K
+        if k_dt == I.DT_INT8:
+            k_unit = np.frombuffer(k_bf16, dtype=_BF16).astype(np.float32)
+            q, s_q = self._quantize_k_fold(k_unit)
+            self.write_bytes("hbm", k_base + (pos << 7), q.tobytes())
+            self.write_bytes("hbm", scale_addr, self._bf16_scalar(s_q))
+        else:
+            self.write_bytes("hbm", k_base + (pos << 8), k_bf16)
+        # V
+        if v_dt == I.DT_INT4:
+            vf = np.frombuffer(v_bf16, dtype=_BF16).astype(np.float32)
+            q4, s_v = self._quantize_v_int4(vf)
+            self.write_bytes("hbm", v_base + (pos << 6), self._pack_int4(q4))
+            self.write_bytes("hbm", scale_addr + 2, self._bf16_scalar(s_v))
+        else:
+            self.write_bytes("hbm", v_base + (pos << 8), v_bf16)
+
+    def _kv_read(self, layer, head, pos_start, count, kv, dtype,
+                 dst_kind, dst_addr):
+        """Dequant-on-read: INT8-K (fold, signed) / INT4-V -> BF16 staging.
+        K is stored pre-RoPE (fold scheme); RoPE is applied on-read by the
+        program's ROPE op (dedicated rotator is the conditional perf item)."""
+        base = self._kv_slab_base(layer, head, kv)
+        if dtype == I.DT_INT8:
+            data_esz, shift = 128, 7
+        elif dtype == I.DT_INT4:
+            data_esz, shift = 64, 6
+        else:
+            data_esz, shift = 256, 8
+        out = bytearray()
+        for t in range(count):
+            pos = pos_start + t
+            raw = self.read_bytes("hbm", base + (pos << shift), data_esz)
+            scale_addr = self._kv_scale_addr(layer, head, pos)
+            if dtype == I.DT_INT8:
+                q = np.frombuffer(raw, dtype=np.int8).astype(np.float32)
+                s_q = float(np.frombuffer(
+                    self.read_bytes("hbm", scale_addr, 2),
+                    dtype=_BF16).astype(np.float32)[0])
+                k_norm = np.frombuffer(
+                    self.read_bytes("sram", self._k_norm_addr(layer, head), 256),
+                    dtype=_BF16).astype(np.float32)
+                k_hat = self._dequant_k_fold(q, s_q, k_norm)
+                out += k_hat.astype(_BF16).tobytes()
+            elif dtype == I.DT_INT4:
+                q4 = unpack_int4(raw, 128).astype(np.float32)
+                s_v = float(np.frombuffer(
+                    self.read_bytes("hbm", scale_addr + 2, 2),
+                    dtype=_BF16).astype(np.float32)[0])
+                v_hat = self._dequant_v_int4(q4, s_v)
+                out += v_hat.astype(_BF16).tobytes()
+            else:
+                out += raw
+        self.write_bytes(dst_kind, dst_addr, bytes(out))
 
 
 def int8_group_partials(A_i8: np.ndarray, B_i8: np.ndarray,

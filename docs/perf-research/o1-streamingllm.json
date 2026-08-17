@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "created_utc": "2026-08-16T00:50:21Z",
+    "model": "Qwen/Qwen3-0.6B",
+    "dtype": "bfloat16",
+    "device": "cuda",
+    "sinks": 4,
+    "windows": [
+      1024,
+      2048
+    ],
+    "seq_len": 4096,
+    "position": 4095,
+    "comparison": "HF windowed attention (transformers eager, 4D bf16 additive StreamingLLM mask) vs qrun windowed decode, last-position logits"
+  },
+  "logit_compare": {
+    "1024": {
+      "argmax_hf": 279,
+      "argmax_qrun": 279,
+      "argmax_match": true,
+      "max_abs_delta_logit": 2.40625,
+      "maxerr_idx": 20945,
+      "maxerr_hf_logit": 0.7734375,
+      "maxerr_qrun_logit": -1.6328125,
+      "argmax_hf_logit": 22.625,
+      "argmax_qrun_logit": 22.625
+    },
+    "2048": {
+      "argmax_hf": 279,
+      "argmax_qrun": 279,
+      "argmax_match": true,
+      "max_abs_delta_logit": 1.46875,
+      "maxerr_idx": 141806,
+      "maxerr_hf_logit": -5.125,
+      "maxerr_qrun_logit": -6.59375,
+      "argmax_hf_logit": 23.0,
+      "argmax_qrun_logit": 23.25
+    }
+  }
+}

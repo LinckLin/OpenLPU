@@ -130,7 +130,27 @@ package qcore_pkg;
   localparam int AR_KV_BASE = 63;
   localparam int C_KV_POS   = 30;
   localparam int C_SLAB_SHIFT = 31;
-
+  // B' (INT8-K fold + INT4-V) KV scale metadata ABI (bprime-impl report):
+  //   AR_KV_SCALE_BASE = HBM byte base of per-token scale slabs
+  //     (per (layer,head): 8192 x 4 B = 32 KB; record = [s_q 2B][s_v 2B]).
+  //   C_KVNORM_BASE     = SRAM word addr of the static per-channel folded
+  //     scale (k_norm) table: per (layer,head) 128 signed BF16 = 256 B.
+  localparam int AR_KV_SCALE_BASE = 62;
+  localparam int C_KVNORM_BASE    = 29;
+  localparam int KV_SCALE_SLAB_STRIDE = 8192 * 4;
+  localparam int K_NORM_HEAD_BYTES    = 128 * 2;
+  // B' B-feed fusion (rotator-impl, plan v3): CD register [31:21] extended
+  // semantics + BMM instruction reserved [20:5] = pos_base.  The 33-instruction
+  // set is unchanged; these bits only fire under the new descriptor (CD[31]=1).
+  //   CD[31]    KV_QUANT : 1 = B operand is quantized KV (B-feed dequant)
+  //   CD[30]    ROTATE_K : 1 = apply absolute-position RoPE to K in B-feed
+  //   CD[29:21] KV_IDX   : (layer*8 + head), selects k_norm/scale slab
+  localparam int CD_KV_QUANT  = 31;
+  localparam int CD_ROTATE_K  = 30;
+  localparam int CD_KV_IDX_HI = 29;
+  localparam int CD_KV_IDX_LO = 21;
+  localparam int POS_BASE_HI  = 20;   // BMM reserved [20:5] = pos_base (16b)
+  localparam int POS_BASE_LO  = 5;
   // Instruction fields: generic header offsets (02 §2.1/§2.2).
   localparam int ENG_HI = 127;   // engine tag  [127:120]
   localparam int ENG_LO = 120;

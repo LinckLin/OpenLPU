@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "created_utc": "2026-08-16T03:25:43Z",
+    "model": "Qwen/Qwen3-0.6B",
+    "dtype": "bfloat16",
+    "scheme": "KV INT8 symmetric per-group + BF16 scale metadata",
+    "sinks": 4,
+    "window": 2048,
+    "k_group": 128,
+    "v_group": 128,
+    "static_kchan": true,
+    "seq_lens": [
+      4096,
+      8192
+    ],
+    "baseline": "docs/perf-research/quality-baseline/quality_baseline.json",
+    "delta_ppl_gate": 0.02,
+    "cross_gate": ">=8/10",
+    "device": "cuda"
+  },
+  "sanity": {
+    "ref_greedy_tokens": [
+      23700,
+      304,
+      15279,
+      13,
+      62020
+    ],
+    "my_forward_tokens": [
+      23700,
+      304,
+      15279,
+      13,
+      62020
+    ],
+    "match": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "static_kchan": {
+    "seq_len": 4096,
+    "n_spans": 4,
+    "calib_tokens": 128,
+    "v_group": 128,
+    "per_sample": [
+      {
+        "sample_id": "L4096_s00_book0000",
+        "mean_nll_full": 3.7146897315979004,
+        "mean_nll_static": 4.235646724700928,
+        "ppl_full": 41.04584987826408,
+        "ppl_static": 69.10635707277824,
+        "delta_ppl": 0.6836390271689297
+      },
+      {
+        "sample_id": "L4096_s01_book0001",
+        "mean_nll_full": 3.914971351623535,
+        "mean_nll_static": 4.423116207122803,
+        "ppl_full": 50.14763484213602,
+        "ppl_static": 83.35563447756942,
+        "delta_ppl": 0.6622055847763797
+      },
+      {
+        "sample_id": "L4096_s02_book0002",
+        "mean_nll_full": 3.028625011444092,
+        "mean_nll_static": 3.528944253921509,
+        "ppl_full": 20.668793687502973,
+        "ppl_static": 34.087960380355256,
+        "delta_ppl": 0.6492474325464259
+      },
+      {
+        "sample_id": "L4096_s03_book0003",
+        "mean_nll_full": 3.2747764587402344,
+        "mean_nll_static": 3.7946245670318604,
+        "ppl_full": 26.437314989270547,
+        "ppl_static": 44.46154094342694,
+        "delta_ppl": 0.681771990035507
+      }
+    ],
+    "pooled_mean_dnll": 0.5123175000839019,
+    "pooled_delta_ppl": 0.6691549828650032,
+    "pooled_ppl_full": 32.56589705934321,
+    "pooled_ppl_static": 54.35751846346286,
+    "gate": 0.02,
+    "pass": false
+  },
+  "ceiling": {
+    "S": 4,
+    "W": 2048,
+    "R_tokens": 2052,
+    "baseline": {
+      "4096": {
+        "R_tokens": 4096,
+        "overlap_tok_s": 487.5,
+        "double_buffer_tok_s": 481.1
+      },
+      "8192": {
+        "R_tokens": 8192,
+        "overlap_tok_s": 257.3,
+        "double_buffer_tok_s": 255.2
+      }
+    },
+    "windowed_bf16": {
+      "R_tokens": 2052,
+      "overlap_tok_s": 866.0,
+      "double_buffer_tok_s": 845.9
+    },
+    "windowed_int8kv_q05": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 2048,
+      "overlap_tok_s": 1008.8,
+      "double_buffer_tok_s": 981.6,
+      "kv_data_bytes_per_layer": 4202496
+    },
+    "windowed_int8kv_scale32": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 2080,
+      "overlap_tok_s": 1006.2,
+      "double_buffer_tok_s": 979.2,
+      "kv_data_bytes_per_layer": 4202496,
+      "kv_scale_bytes_per_layer": 65664
+    },
+    "windowed_vonly": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 3088,
+      "overlap_tok_s": 930.8,
+      "double_buffer_tok_s": 907.7,
+      "kv_data_bytes_per_layer": 6303744,
+      "kv_scale_bytes_per_layer": 32832
+    },
+    "windowed_kchan_dynamic": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 4096,
+      "overlap_tok_s": 866.0,
+      "double_buffer_tok_s": 845.9,
+      "kv_data_bytes_per_layer": 4202496,
+      "kv_scale_bytes_per_layer": 4202496
+    }
+  }
+}

@@ -34,6 +34,8 @@
 `include "vector_engine.sv"
 `include "dma_engine.sv"
 `include "kv_addrgen.sv"
+`include "kv_quantdequant.sv"
+`include "kv_bfeed.sv"
 
 module command_processor #(
   parameter int NINST   = 4096,
@@ -90,7 +92,8 @@ module command_processor #(
     S_VEC_RDA=3, S_VEC_RDB=4, S_VEC_BROAD=5, S_VEC_GO=6, S_VEC_WR=7,
     S_MX_START=8, S_MX_STRM_A=9, S_MX_STRM_B=10, S_MX_RUN=11, S_MX_WAIT=12,
     S_MX_RDC=13, S_MX_RDS=14, S_MX_RDOUT=15, S_MX_WR=16,
-    S_DMA=17, S_KV=18, S_DONE=19;
+    S_DMA=17, S_KV=18, S_DONE=19, S_KVQD=20,
+    S_MX_BFEED_PRE=21, S_MX_BFEED_B=22;
 
   logic [4:0]  state;
   logic [15:0] pc;
@@ -117,6 +120,14 @@ module command_processor #(
   logic [31:0] batch_stride_a, batch_stride_b, batch_stride_c;
   logic        acc_init, dequant, ta, tb;
   logic [2:0]  out_dt, scale_dt;
+  // B' B-feed fusion (CD[31:30] KV_QUANT/ROTATE_K, CD[29:21] kv_idx,
+  // BMM[20:5] pos_base).  Only active when kv_quant=1.
+  logic        kv_quant, rotate_k;
+  logic [8:0]  kv_idx;
+  logic [15:0] pos_base;
+  logic [39:0] kvq_scale_base;   // AR62 + kv_idx*32768 (HBM byte)
+  logic [39:0] kvq_knorm_base;   // C29*16 + kv_idx*256 (SRAM byte)
+  logic        bfeed_row_pending;
   integer      in_esz, out_esz;
   integer      ngroups;
   logic [15:0] mx_k;      // K-stream counter (mirrors engine kk)
@@ -138,6 +149,14 @@ module command_processor #(
   logic [4:0]  kv_cstride;
   integer      kv_ntransfer;
   logic        kv_running;
+  // B' quantized-KV latched (INT8-K fold + INT4-V): dtype from header srcA/srcB
+  logic [2:0]  kv_k_dt, kv_v_dt;
+  logic [2:0]  kvqd_head;     // current KV head 0..7
+  logic [13:0] kvqd_tok;      // current token offset within block
+  logic        kvqd_phase;    // 0 = K tensor, 1 = V tensor
+  logic        kvqd_start;    // module start pulse
+  logic        kvqd_done;
+  logic        kvqd_running;
 
   // decode current instruction
   wire [7:0] opcode_d = imem[pc][119:112];
@@ -238,14 +257,22 @@ module command_processor #(
 
   dma_engine u_dma (
     .clk(clk), .rst_n(rst_n), .start(dma_start),
-    .src_sel(dma_active && state == S_KV ? kv_src_sel_c : dma_src_sel_r),
-    .dst_sel(dma_active && state == S_KV ? kv_dst_sel_c : dma_dst_sel_r),
-    .src_base(dma_active && state == S_KV ? kv_src_base_c : dma_src_base_r),
-    .dst_base(dma_active && state == S_KV ? kv_dst_base_c : dma_dst_base_r),
-    .row_bytes(dma_active && state == S_KV ? kv_row_bytes_c : dma_row_bytes_r),
-    .num_rows(dma_active && state == S_KV ? kv_num_rows_c : dma_num_rows_r),
-    .src_stride(dma_active && state == S_KV ? 32'd256 : dma_stride_r),
-    .mode(dma_active && state == S_KV ? 1'b1 : dma_mode_r),
+    .src_sel(kvqd_dma_go ? kvqd_dma_src_sel :
+             (dma_active && state == S_KV ? kv_src_sel_c : dma_src_sel_r)),
+    .dst_sel(kvqd_dma_go ? kvqd_dma_dst_sel :
+             (dma_active && state == S_KV ? kv_dst_sel_c : dma_dst_sel_r)),
+    .src_base(kvqd_dma_go ? kvqd_dma_src :
+              (dma_active && state == S_KV ? kv_src_base_c : dma_src_base_r)),
+    .dst_base(kvqd_dma_go ? kvqd_dma_dst :
+              (dma_active && state == S_KV ? kv_dst_base_c : dma_dst_base_r)),
+    .row_bytes(kvqd_dma_go ? 16'd256 :
+               (dma_active && state == S_KV ? kv_row_bytes_c : dma_row_bytes_r)),
+    .num_rows(kvqd_dma_go ? 16'd1 :
+              (dma_active && state == S_KV ? kv_num_rows_c : dma_num_rows_r)),
+    .src_stride(kvqd_dma_go ? 32'd256 :
+                (dma_active && state == S_KV ? 32'd256 : dma_stride_r)),
+    .mode(kvqd_dma_go ? 1'b1 :
+          (dma_active && state == S_KV ? 1'b1 : dma_mode_r)),
     .rd_addr(dma_rd_addr), .rd_sel(dma_rd_sel), .rd_data(mem_rd_data),
     .wr_en(dma_wr_en), .wr_addr(dma_wr_addr), .wr_sel(dma_wr_sel),
     .wr_data(dma_wr_data), .done(dma_done)
@@ -254,13 +281,118 @@ module command_processor #(
   logic dma_rd_sel, dma_wr_sel, dma_wr_en;
   logic [7:0] dma_wr_data;
 
-  assign dma_active = (state == S_DMA) || (state == S_KV);
-  assign mem_rd_sel  = dma_active ? dma_rd_sel  : op_rd_sel;
-  assign mem_rd_addr = dma_active ? dma_rd_addr : op_rd_addr;
-  assign mem_wr_en   = dma_active ? dma_wr_en   : op_wr_en;
-  assign mem_wr_sel  = dma_active ? dma_wr_sel  : op_wr_sel;
-  assign mem_wr_addr = dma_active ? dma_wr_addr : op_wr_addr;
-  assign mem_wr_data = dma_active ? dma_wr_data : op_wr_data;
+  // B' quantized-KV datapath (INT8-K fold + INT4-V)
+  logic        kvqd_rd_sel, kvqd_wr_en, kvqd_wr_sel;
+  logic [39:0] kvqd_rd_addr, kvqd_wr_addr;
+  logic [7:0]  kvqd_wr_data;
+  logic [39:0] kvqd_k_base, kvqd_v_base, kvqd_scale_base;
+  logic [39:0] kvqd_stage;
+  logic        kvqd_kv;
+  logic        kvqd_write_mode;
+  logic [13:0] kvqd_pos_c;        // kv_pos + kvqd_tok (14-bit)
+  logic [39:0] kvqd_slab_off;     // slab_index << SLAB_SHIFT
+
+  // combinational B' KV addressing (per current (tok, phase))
+  assign kvqd_pos_c = {1'b0, kv_pos} + kvqd_tok;
+  assign kvqd_kv = kvqd_phase;
+  assign kvqd_write_mode = (op == OP_KV_APPEND) || (op == OP_KV_STORE_BLOCK);
+  assign kvqd_slab_off = ({kv_layer, kv_head, 1'b0} << C[31][4:0]);
+  // K data (INT8): pos<<7; V data (INT4): pos<<6
+  assign kvqd_k_base = kv_base + kvqd_slab_off + ({26'b0, kvqd_pos_c} << 7);
+  assign kvqd_v_base = kv_base + (kvqd_slab_off + (40'd1 << C[31][4:0]))
+                     + ({26'b0, kvqd_pos_c} << 6);
+  // per-token scale record: AR_KV_SCALE_BASE + (layer*8+head)*stride + pos*4
+  assign kvqd_scale_base = ar_addr(AR[AR_KV_SCALE_BASE])
+    + ({31'b0, kv_layer, kv_head} * 40'd32768) + ({26'b0, kvqd_pos_c} << 2);
+  // (static k_norm table now feeds the B-feed (kv_bfeed), not the retired
+  //  LOAD-side staged dequant.)
+  // staging: K -> a_base, V -> b_base, + tok*256 for multi-token blocks
+  assign kvqd_stage = (kvqd_kv ? b_base : a_base) + (kvqd_tok * 40'd256);
+  // per-phase quantized flag + BF16-tensor DMA fallback descriptor
+  logic kvqd_phase_q;        // current phase tensor is quantized
+  assign kvqd_phase_q = kvqd_phase ? (kv_v_dt == DT_INT4) : (kv_k_dt == DT_INT8);
+  // BF16 data slab byte bases (pos<<8)
+  logic [39:0] kvqd_k_base_bf16, kvqd_v_base_bf16;
+  assign kvqd_k_base_bf16 = kv_base + kvqd_slab_off + ({26'b0, kvqd_pos_c} << 8);
+  assign kvqd_v_base_bf16 = kv_base + (kvqd_slab_off + (40'd1 << C[31][4:0]))
+                          + ({26'b0, kvqd_pos_c} << 8);
+  logic        kvqd_dma_src_sel, kvqd_dma_dst_sel;
+  logic [39:0] kvqd_dma_src, kvqd_dma_dst;
+  always_comb begin
+    kvqd_dma_src_sel = 1'b0; kvqd_dma_dst_sel = 1'b0;
+    kvqd_dma_src = 40'b0; kvqd_dma_dst = 40'b0;
+    if (kvqd_write_mode) begin
+      // BF16 tensor write: SRAM staging -> HBM slab (pos<<8, 256 B/token)
+      kvqd_dma_src_sel = 1'b0;
+      kvqd_dma_src = kvqd_stage;
+      kvqd_dma_dst_sel = 1'b1;
+      kvqd_dma_dst = (kvqd_kv ? kvqd_v_base_bf16 : kvqd_k_base_bf16);
+    end else begin
+      kvqd_dma_src_sel = 1'b1;
+      kvqd_dma_src = (kvqd_kv ? kvqd_v_base_bf16 : kvqd_k_base_bf16);
+      kvqd_dma_dst_sel = 1'b0;
+      kvqd_dma_dst = kvqd_stage;
+    end
+  end
+  logic kvqd_dma_go;   // S_KVQD && current phase tensor is BF16 (DMA fallback)
+  assign kvqd_dma_go = (state == S_KVQD) && !kvqd_phase_q;
+  // which tensors this KV op processes (write: always K+V; LOAD: sel selects)
+  logic kvqd_do_k, kvqd_do_v;
+  // KV.LOAD sel: 0=K only, 1=V only, 2=both (05 §4.3).  sel[0] alone cannot
+  // express both (sel=2 has sel[0]=0), so compare the full 2-bit field.
+  assign kvqd_do_k = (op == OP_KV_APPEND) || (op == OP_KV_STORE_BLOCK) ||
+                     ((op == OP_KV_LOAD) && kv_sel2 != 2'd1);
+  assign kvqd_do_v = (op == OP_KV_APPEND) || (op == OP_KV_STORE_BLOCK) ||
+                     ((op == OP_KV_LOAD) && kv_sel2 != 2'd0);
+  kv_quantdequant u_kvqd (
+    .clk(clk), .rst_n(rst_n),
+    .start(kvqd_start),
+    .kv(kvqd_kv),
+    .data_base(kvqd_kv ? kvqd_v_base : kvqd_k_base),
+    .scale_base(kvqd_scale_base),
+    .sram_base(kvqd_stage),
+    .rd_sel(kvqd_rd_sel), .rd_addr(kvqd_rd_addr), .rd_data(mem_rd_data),
+    .wr_en(kvqd_wr_en), .wr_sel(kvqd_wr_sel),
+    .wr_addr(kvqd_wr_addr), .wr_data(kvqd_wr_data),
+    .done(kvqd_done)
+  );
+
+  // B' B-feed (dequant + on-the-fly RoPE for the BMM B operand)
+  logic        bfeed_start, bfeed_row_req;
+  logic        bfeed_active;
+  logic        bfeed_rd_sel, bfeed_row_valid, bfeed_ready;
+  logic [39:0] bfeed_rd_addr;
+  logic [31:0] bfeed_row [128];
+  kv_bfeed #(.MAX_N(128)) u_bfeed (
+    .clk(clk), .rst_n(rst_n),
+    .start(bfeed_start),
+    .rotate_k(rotate_k),
+    .pos_base(pos_base),
+    .N(N),
+    .data_base(b_base),
+    .scale_base(kvq_scale_base),
+    .k_norm_base(kvq_knorm_base),
+    .rd_sel(bfeed_rd_sel), .rd_addr(bfeed_rd_addr), .rd_data(mem_rd_data),
+    .row_ch(mx_k), .row_req(bfeed_row_req),
+    .row(bfeed_row), .row_valid(bfeed_row_valid), .ready(bfeed_ready)
+  );
+
+  assign bfeed_active = (state == S_MX_BFEED_PRE) || (state == S_MX_BFEED_B);
+  assign dma_active = (state == S_DMA) || (state == S_KV) || kvqd_dma_go;
+  assign mem_rd_sel  = bfeed_active ? bfeed_rd_sel :
+                       ((state == S_KVQD && !kvqd_dma_go) ? kvqd_rd_sel :
+                       (dma_active ? dma_rd_sel : op_rd_sel));
+  assign mem_rd_addr = bfeed_active ? bfeed_rd_addr :
+                       ((state == S_KVQD && !kvqd_dma_go) ? kvqd_rd_addr :
+                       (dma_active ? dma_rd_addr : op_rd_addr));
+  assign mem_wr_en   = (state == S_KVQD && !kvqd_dma_go) ? kvqd_wr_en :
+                       (dma_active ? dma_wr_en : op_wr_en);
+  assign mem_wr_sel  = (state == S_KVQD && !kvqd_dma_go) ? kvqd_wr_sel :
+                       (dma_active ? dma_wr_sel : op_wr_sel);
+  assign mem_wr_addr = (state == S_KVQD && !kvqd_dma_go) ? kvqd_wr_addr :
+                       (dma_active ? dma_wr_addr : op_wr_addr);
+  assign mem_wr_data = (state == S_KVQD && !kvqd_dma_go) ? kvqd_wr_data :
+                       (dma_active ? dma_wr_data : op_wr_data);
 
   // combinational KV transfer descriptor (per gidx)
   always_comb begin
@@ -405,8 +537,14 @@ module command_processor #(
       OP_DMA_STORE: latency = T_FIRST + hbm_write_cycles(dma_row_bytes_r * dma_num_rows_r);
       OP_GEMM, OP_GEMV, OP_BMM:
         latency = (mode == 1'b1) ? matrix_dc_batch_cycles(K) : matrix_pf_cycles(M, K);
-      OP_KV_APPEND: latency = T_FIRST + hbm_write_cycles(512);
-      OP_KV_STORE_BLOCK: latency = T_FIRST + hbm_write_cycles(kv_count * 256 * 2);
+      OP_KV_APPEND:
+        latency = (kv_k_dt == DT_INT8 || kv_v_dt == DT_INT4)
+                  ? T_FIRST + hbm_write_cycles(196)      // K 128 + V 64 + scale 4
+                  : T_FIRST + hbm_write_cycles(512);
+      OP_KV_STORE_BLOCK:
+        latency = (kv_k_dt == DT_INT8 || kv_v_dt == DT_INT4)
+                  ? T_FIRST + hbm_write_cycles(kv_count * 196)
+                  : T_FIRST + hbm_write_cycles(kv_count * 256 * 2);
       OP_KV_LOAD: begin
         integer nb;
         nb = (kv_sel2 == 2'd2) ? kv_count * 256 * 2 : kv_count * 256;
@@ -451,10 +589,15 @@ module command_processor #(
       total_cycles <= 64'b0; trace_valid <= 1'b0;
       trace_index <= 16'b0; trace_cycles <= 32'b0;
       dma_start <= 1'b0; kv_running <= 1'b0;
+      kvqd_start <= 1'b0; kvqd_running <= 1'b0;
+      bfeed_start <= 1'b0; bfeed_row_req <= 1'b0;
+      bfeed_row_pending <= 1'b0;
     end else begin
       trace_valid <= 1'b0;
       dma_start <= 1'b0;
-
+      kvqd_start <= 1'b0;
+      bfeed_start <= 1'b0;
+      bfeed_row_req <= 1'b0;
       case (state)
         S_IDLE: if (start) state <= S_FETCH;
 
@@ -469,7 +612,6 @@ module command_processor #(
           batch <= imem[pc][53:48];
           len <= imem[pc][85:70];
           imm <= imem[pc][64:33];
-
           if (opcode_d inside {OP_CONFIG, OP_BARRIER, OP_WAIT, OP_NOP, OP_MODE})
             state <= S_SINGLE;
           else if (opcode_d inside {OP_DMA_LOAD, OP_DMA_STORE, OP_DMA_PREFETCH}) begin
@@ -502,7 +644,19 @@ module command_processor #(
             b_sel <= ar_sel(AR[imem[pc][97:92]]);
             b_base <= ar_addr(AR[imem[pc][97:92]]);
             gidx <= 0; kv_running <= 1'b1;
-            state <= S_KV;
+            // B' quantized-KV loop init; LOAD sel=1 (V-only) starts at V phase
+            kvqd_tok <= 14'd0; kvqd_phase <= 1'b0; kvqd_running <= 1'b1;
+            if (opcode_d == OP_KV_LOAD && imem[pc][82:81] == 2'd1)
+              kvqd_phase <= 1'b1;
+            // B' dtype combination: header srcA = K dtype, srcB = V dtype
+            kv_k_dt <= imem[pc][111:109];
+            kv_v_dt <= imem[pc][108:106];
+            // Quantized KV: APPEND/STORE_BLOCK (quantize-on-write) go through
+            // S_KVQD; quantized LOAD is RETIRED (consumed inline by the BMM
+            // B-feed, kv_bfeed) and falls through to the BF16 DMA path.
+            state <= (((imem[pc][111:109] != DT_BF16) || (imem[pc][108:106] != DT_BF16))
+                      && (opcode_d == OP_KV_APPEND || opcode_d == OP_KV_STORE_BLOCK))
+                      ? S_KVQD : S_KV;
           end
           else if (opcode_d inside {OP_GEMM, OP_GEMV, OP_BMM}) begin
             a_sel <= ar_sel(AR[imem[pc][103:98]]);
@@ -521,6 +675,18 @@ module command_processor #(
             dequant <= imem[pc][25];
             ta <= imem[pc][24];
             tb <= imem[pc][23];
+            begin
+              logic [8:0] kv_idx_d;
+              logic [31:0] cdv;
+              cdv = C[imem[pc][32:28]];
+              kv_idx_d = cdv[CD_KV_IDX_HI:CD_KV_IDX_LO];
+              kv_quant <= cdv[CD_KV_QUANT];
+              rotate_k <= cdv[CD_ROTATE_K];
+              kv_idx   <= kv_idx_d;
+              pos_base <= imem[pc][POS_BASE_HI:POS_BASE_LO];
+              kvq_scale_base <= ar_addr(AR[AR_KV_SCALE_BASE]) + kv_idx_d * 40'd32768;
+              kvq_knorm_base <= ({21'b0, C[C_KVNORM_BASE][18:0]} << 4) + kv_idx_d * 40'd256;
+            end
             // dequant scale descriptor CD = C[imem[pc][32:28]]: [20]=mode,
             // [19]=scale dtype, [18:0]=SRAM word addr (02 §6 / 04 §1.5).
             scale_sel  <= 1'b0;
@@ -636,7 +802,11 @@ module command_processor #(
 
         S_MX_START: begin
           mx_j <= 0; bc <= 0; mx_mac <= 0;
-          state <= S_MX_STRM_A;
+          if (kv_quant) begin
+            bfeed_start <= 1'b1;
+            bfeed_row_pending <= 1'b0;
+            state <= S_MX_BFEED_PRE;
+          end else state <= S_MX_STRM_A;
         end
 
         S_MX_STRM_A: begin
@@ -644,9 +814,33 @@ module command_processor #(
           if (bc == in_esz - 1) begin
             a_slice[mx_j] <= decode_elem(accb_next, sa, 1'b0);
             bc <= 0;
-            if (mx_j == M - 1) begin mx_j <= 0; state <= S_MX_STRM_B; end
+            if (mx_j == M - 1) begin
+              mx_j <= 0;
+              state <= kv_quant ? S_MX_BFEED_B : S_MX_STRM_B;
+            end
             else mx_j <= mx_j + 1;
           end else bc <= bc + 1;
+        end
+
+        S_MX_BFEED_PRE: begin
+          // wait for the K precompute (or pass through for V)
+          if (bfeed_ready) begin
+            mx_j <= 0; bc <= 0;
+            state <= S_MX_STRM_A;
+          end
+        end
+
+        S_MX_BFEED_B: begin
+          if (!bfeed_row_pending) begin
+            bfeed_row_req <= 1'b1;
+            bfeed_row_pending <= 1'b1;
+          end else if (bfeed_row_valid) begin
+            b_slice <= bfeed_row;   // whole-array copy (Verilator-safe)
+            bfeed_row_pending <= 1'b0;
+            bfeed_row_req <= 1'b0;   // single-cycle request pulse
+            mx_j <= 0; mx_mac <= 0;
+            state <= S_MX_RUN;
+          end
         end
 
         S_MX_STRM_B: begin
@@ -756,6 +950,31 @@ module command_processor #(
             end else begin
               gidx <= gidx + 1;
               kv_running <= 1'b1;
+            end
+          end
+        end
+
+        S_KVQD: begin
+          if (kvqd_running) begin
+            // issue the (tok, phase) transform: quantized -> kvqd module,
+            // BF16 tensor -> DMA fallback (256 B/token).
+            kvqd_running <= 1'b0;
+            if (kvqd_phase_q) kvqd_start <= 1'b1;
+            else              dma_start <= 1'b1;
+          end else if (kvqd_phase_q ? kvqd_done : dma_done) begin
+            // advance phase/token; finish when all (tok, phase) done
+            if (kvqd_phase == 1'b0 && kvqd_do_v) begin
+              kvqd_phase <= 1'b1;
+              kvqd_running <= 1'b1;
+            end else if (kvqd_tok < kv_count - 14'd1) begin
+              kvqd_tok <= kvqd_tok + 14'd1;
+              kvqd_phase <= 1'b0;
+              kvqd_running <= 1'b1;
+            end else begin
+              total_cycles <= total_cycles + latency;
+              trace_valid <= 1'b1; trace_index <= pc; trace_cycles <= latency;
+              pc <= pc + 1;
+              state <= (pc + 1 >= prog_len) ? S_DONE : S_FETCH;
             end
           end
         end

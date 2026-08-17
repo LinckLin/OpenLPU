@@ -1,0 +1,306 @@
+{
+  "meta": {
+    "created_utc": "2026-08-16T05:14:03.058018+00:00",
+    "model": "Qwen/Qwen3-0.6B",
+    "model_dir": "/home/lzl/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B",
+    "dtype": "bfloat16",
+    "attention": "eager (HF native full attention)",
+    "device": "cuda",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.5.3",
+    "seed": 0,
+    "gamma": 4,
+    "gate": {
+      "alpha_start": 0.4,
+      "alpha_gen2": 0.25
+    },
+    "timing_model": {
+      "t_step_cyc": 1154087,
+      "tok_per_s": 866.0,
+      "lm_head_mac_step_cyc": 4748,
+      "note": "T_verify(n) = T_STEP + (n-1)*lm_head_mac_step (DECISION §3 / speculative.md §3)"
+    }
+  },
+  "draft_sources": {
+    "ngram": {
+      "desc": "static 4-gram dict (context=3 tokens -> most-frequent continuation)",
+      "train_corpus": "pg19 train (~6.0 MB, 2 books)",
+      "n_tokens": 2665825,
+      "n_4grams": 1913268,
+      "n_contexts": 1243080
+    },
+    "pld": {
+      "desc": "Prompt Lookup Decoding: dynamic dict over prompt + accepted tokens (most recent prior occurrence of current 3-gram)",
+      "train_corpus": "none (reference = prompt + generated history)"
+    }
+  },
+  "eval": {
+    "hellaswag": {
+      "n_examples": 100,
+      "gen_tokens_per": 32,
+      "seed": 0,
+      "indices": [
+        27,
+        53,
+        82,
+        164,
+        220,
+        282,
+        334,
+        407,
+        487,
+        730,
+        748,
+        802,
+        843,
+        890,
+        1241,
+        1352,
+        1744,
+        1751,
+        2279,
+        2552,
+        2570,
+        2648,
+        2683,
+        2763,
+        2991,
+        3061,
+        3106,
+        3227,
+        3292,
+        3389,
+        3585,
+        3759,
+        3786,
+        3794,
+        3834,
+        3891,
+        3928,
+        4025,
+        4219,
+        4235,
+        4606,
+        4801,
+        4866,
+        5013,
+        5058,
+        5083,
+        5250,
+        5259,
+        5324,
+        5402,
+        5414,
+        5525,
+        5577,
+        5729,
+        5794,
+        5959,
+        6039,
+        6148,
+        6255,
+        6296,
+        6333,
+        6463,
+        6465,
+        6505,
+        6685,
+        6698,
+        6742,
+        6855,
+        6887,
+        7043,
+        7168,
+        7200,
+        7214,
+        7222,
+        7264,
+        7276,
+        7626,
+        7630,
+        7635,
+        8047,
+        8093,
+        8129,
+        8361,
+        8405,
+        8442,
+        8457,
+        8464,
+        8546,
+        8611,
+        8757,
+        8910,
+        8933,
+        9085,
+        9315,
+        9359,
+        9501,
+        9665,
+        9806,
+        9968,
+        10031
+      ]
+    },
+    "general": {
+      "n_spans": 6,
+      "prompt_tokens": 256,
+      "gen_tokens_per": 128,
+      "span_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "total_generated_tokens": 3968
+  },
+  "alpha_per_corpus": {
+    "general": {
+      "ngram": {
+        "n_positions": 768,
+        "proposed": 252,
+        "accepted": 26,
+        "miss": 516,
+        "coverage": 0.328125,
+        "alpha_covered": 0.10317460317460317,
+        "alpha_effective": 0.033854166666666664
+      },
+      "pld": {
+        "n_positions": 768,
+        "proposed": 265,
+        "accepted": 193,
+        "miss": 503,
+        "coverage": 0.3450520833333333,
+        "alpha_covered": 0.7283018867924528,
+        "alpha_effective": 0.2513020833333333
+      },
+      "n_positions": 768
+    },
+    "hellaswag": {
+      "ngram": {
+        "n_positions": 3200,
+        "proposed": 413,
+        "accepted": 36,
+        "miss": 2787,
+        "coverage": 0.1290625,
+        "alpha_covered": 0.08716707021791767,
+        "alpha_effective": 0.01125
+      },
+      "pld": {
+        "n_positions": 3200,
+        "proposed": 1262,
+        "accepted": 1021,
+        "miss": 1938,
+        "coverage": 0.394375,
+        "alpha_covered": 0.8090332805071315,
+        "alpha_effective": 0.3190625
+      },
+      "n_positions": 3200
+    }
+  },
+  "alpha_overall": {
+    "ngram": {
+      "n_positions": 3968,
+      "proposed": 665,
+      "accepted": 62,
+      "miss": 3303,
+      "coverage": 0.16759072580645162,
+      "alpha_covered": 0.09323308270676692,
+      "alpha_effective": 0.015625
+    },
+    "pld": {
+      "n_positions": 3968,
+      "proposed": 1527,
+      "accepted": 1214,
+      "miss": 2441,
+      "coverage": 0.38482862903225806,
+      "alpha_covered": 0.7950229207596594,
+      "alpha_effective": 0.3059475806451613
+    },
+    "n_positions": 3968
+  },
+  "chain_verify_wallclock": {
+    "general": {
+      "ngram": {
+        "steps": 742,
+        "proposed": 893,
+        "accepted": 26,
+        "produced": 768,
+        "alpha_chain": 0.029115341545352745,
+        "cyc_base": 886338816,
+        "cyc_spec": 860572518,
+        "speedup": 1.0299408794274325,
+        "tok_s": 891.9288015841565
+      },
+      "pld": {
+        "steps": 600,
+        "proposed": 373,
+        "accepted": 168,
+        "produced": 768,
+        "alpha_chain": 0.450402144772118,
+        "cyc_base": 886338816,
+        "cyc_spec": 694223204,
+        "speedup": 1.2767346451300696,
+        "tok_s": 1105.6522026826403
+      }
+    },
+    "hellaswag": {
+      "ngram": {
+        "steps": 3167,
+        "proposed": 1383,
+        "accepted": 33,
+        "produced": 3200,
+        "alpha_chain": 0.02386117136659436,
+        "cyc_base": 3693078400,
+        "cyc_spec": 3661560013,
+        "speedup": 1.0086079121707954,
+        "tok_s": 873.4544519399088
+      },
+      "pld": {
+        "steps": 2342,
+        "proposed": 1474,
+        "accepted": 858,
+        "produced": 3200,
+        "alpha_chain": 0.582089552238806,
+        "cyc_base": 3693078400,
+        "cyc_spec": 2709870306,
+        "speedup": 1.3628247786704224,
+        "tok_s": 1180.2062583285858
+      }
+    }
+  },
+  "decision_linear_reference": {
+    "ngram": {
+      "alpha_effective": 0.015625,
+      "tokens_per_step": 1.0625,
+      "speedup": 1.0452982599637364
+    },
+    "pld": {
+      "alpha_effective": 0.3059475806451613,
+      "tokens_per_step": 2.223790322580645,
+      "speedup": 2.1877874397343477
+    }
+  },
+  "verdict": {
+    "ngram": {
+      "coverage": 0.16759072580645162,
+      "alpha_covered": 0.09323308270676692,
+      "alpha_effective": 0.015625,
+      "verdict_alpha_covered": "关闭 (alpha < 0.25)",
+      "verdict_alpha_effective": "关闭 (alpha < 0.25)",
+      "chain_sim_speedup": 1.0126676263040288
+    },
+    "pld": {
+      "coverage": 0.38482862903225806,
+      "alpha_covered": 0.7950229207596594,
+      "alpha_effective": 0.3059475806451613,
+      "verdict_alpha_covered": "立项 (alpha >= 0.40)",
+      "verdict_alpha_effective": "降级 gen-2 (alpha in [0.25, 0.40))",
+      "chain_sim_speedup": 1.345267749709966
+    }
+  },
+  "wall_s": 167.6
+}

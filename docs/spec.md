@@ -82,6 +82,12 @@
 
 - **D16 KV.LOAD 冻结**（decode datapath，见 §5.1）。
 
+- **D17 batch=1 范围解释**（2026-08-14，性能方向决策审计裁决）：D5/02-isa 的「batch=1」指
+  **对外服务契约**（单序列、单用户接口不变）。单序列内部的投机解码验证步（n 个候选 token
+  共享一次权重流与 KV 窗口读的批复用）属既有 **BMM batch≤16（GQA 头批机制）的窄扩展**，
+  不构成多序列/多用户批处理（spec §6 backlog 的 batch>1 仍为独立项）。投机解码立项须先过
+  实测门槛（0.6B 贪心 n-gram α≥0.4，docs/perf-research/decision/DECISION.md）。
+
 ## 4. 关键数值速查
 
 | 量 | 值 |

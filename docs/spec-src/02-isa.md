@@ -287,7 +287,7 @@ PF/DC：DMA 不依赖阵列模式，两种模式下行为一致（DC 下 KV/权�
 | `[25]` | dequant | 1b | `0`=不反量化；`1`=按 CD 反量化 scale |
 | `[24]` | transpose_A | 1b | `0`=A 为 M×K；`1`=A 存为 K×M（读转置） |
 | `[23]` | transpose_B | 1b | `0`=B 为 K×N；`1`=B 存为 N×K（读转置） |
-| `[22:0]` | reserved | 23b | 必须为 0 |
+| `[22:0]` | reserved | 23b | 必须为 0（**BMM 时 `[20:5]` 复用为 `pos_base[15:0]`**，仅 CD.KV_QUANT=1 时有效；`[22:21]`、`[4:0]` 仍必须为 0） |
 
 校验：$6\times3 + 8 + 8 + 16 + 6 + 5\times4 + 5\times1 + 23 = 18+8+8+16+6+20+5+23 = 104$ bit。✓
 
@@ -299,12 +299,18 @@ C 寄存器描述符（32b）：
 
 | 位 | 字段 | 含义 |
 |----|------|------|
-| `[31:21]` | reserved | 必须为 0 |
-| `[20]` | mode | `0`=per-tensor，`1`=per-128-group |
+| `[31]` | KV_QUANT | `1`=B 操作数为量化 KV（B-feed 在线去量化）；`0`=常规权重/去量化路径 |
+| `[30]` | ROTATE_K | `1`=对 K 施加绝对位置 RoPE（B-feed）；`0`=不旋转（V 或常规路径） |
+| `[29:21]` | KV_IDX | `(layer*8+head)`，选择 k_norm/scale slab（仅 KV_QUANT=1 时有效） |
+| `[20]` | mode | `0`=per-tensor，`1`=per-128-group（KV_QUANT=1 时忽略） |
 | `[19]` | scale_dtype | `0`=BF16，`1`=FP16 |
 | `[18:0]` | scale_base | 19b SRAM 字地址（scale 数组基址） |
 
 > per-128-group 的 group 大小固定为 128（契约 per-128-group）。
+> B-feed 融合（rotator-impl）：BMM 指令 reserved `[20:5]` 复用为 `pos_base[15:0]`
+> （绝对位置 0..40959）；KV_QUANT=1 时 B 操作数直接从 HBM 量化 KV slab 读取
+> （K：INT8 折叠 + ROTATE_K；V：INT4 per-token），去量化 + 旋转在 B-feed 内联完成，
+> 不再经 KV.LOAD staged BF16 写入。无新指令（33 条计数不变）。
 
 ### 6.2 逐条
 
@@ -480,6 +486,9 @@ decode 每 token 每层每 KV head 各发一条（36×8=288 条/token；K、V �
 - opcode 落在 reserved 区间（§3）→ 非法指令，Command Processor **halt + 报错**（P3 模拟器同义）。
 - `engine tag` 与 opcode 区间不一致 → 非法指令。
 - 任何标 `必须为 0` 的字段非 0 → 实现可忽略或报错（v0 约定：报错，防前向兼容静默偏差）。
+- **豁免**：MATRIX `CD[31:30]`（KV_QUANT/ROTATE_K）、`CD[29:21]`（KV_IDX）与 BMM 指令
+  `[20:5]`（pos_base）在 rotator-impl（B-feed 融合）中改为语义字段，不再要求为 0；仅当
+  `CD[31]`（KV_QUANT）=1 时该语义生效，`CD[31]=0` 时保持 v0 逐字节向后兼容。
 - `M>128`、`N>128`、GEMV 且 `M≠1`、`batch>16`、`dtype=7`（reserved）→ 非法。
 - AR 引用越界（`[63]=1` 时 `[39:0]` 超出 16 GiB；`[63]=0` 时 `[18:0]` 的 bank/字越界）→ 由 03-memory-system 定义 fault。
 

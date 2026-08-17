@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "created_utc": "2026-08-16T08:17:31Z",
+    "model": "Qwen/Qwen3-0.6B",
+    "dtype": "bfloat16",
+    "scheme": "INT4 KV + QK-norm fold (signed scale), on-read RoPE",
+    "sinks": 4,
+    "window": 2048,
+    "seq_lens": [
+      4096,
+      8192
+    ],
+    "ceiling_only": true
+  },
+  "ceiling": {
+    "S": 4,
+    "W": 2048,
+    "R_tokens": 2052,
+    "baseline": {
+      "4096": {
+        "R_tokens": 4096,
+        "overlap_tok_s": 487.5,
+        "double_buffer_tok_s": 481.1
+      },
+      "8192": {
+        "R_tokens": 8192,
+        "overlap_tok_s": 257.3,
+        "double_buffer_tok_s": 255.2
+      }
+    },
+    "windowed_bf16": {
+      "R_tokens": 2052,
+      "overlap_tok_s": 866.0,
+      "double_buffer_tok_s": 845.9
+    },
+    "int4_scale0": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 1024,
+      "overlap_tok_s": 1099.4,
+      "double_buffer_tok_s": 1067.2
+    },
+    "int4_scale16_folded": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 1040,
+      "overlap_tok_s": 1097.9,
+      "double_buffer_tok_s": 1065.8
+    },
+    "int4_scale32": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 1056,
+      "overlap_tok_s": 1096.3,
+      "double_buffer_tok_s": 1064.3
+    },
+    "int8_k_fold_int4_v": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 1568,
+      "overlap_tok_s": 1049.3,
+      "double_buffer_tok_s": 1020.0
+    },
+    "int8_kv_fold": {
+      "R_tokens": 2052,
+      "kv_bytes_per_token": 2080,
+      "overlap_tok_s": 1006.2,
+      "double_buffer_tok_s": 979.2
+    },
+    "k_norm_static_bytes_per_layer": 2048
+  }
+}

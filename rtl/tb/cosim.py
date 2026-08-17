@@ -54,8 +54,13 @@ def inst_latency(d: dict, mode: int) -> int:
             return matrix_dc_batch_cycles(d["K"])
         return matrix_pf_cycles(d["M"], d["K"])
     if mn == "KV.APPEND":
+        # B' quantized: K INT8 128 + V INT4 64 + scale 4 = 196 B write
+        if d["srcA"] == 2 or d["srcB"] == 3:
+            return T_FIRST + hbm_write_cycles(196)
         return T_FIRST + hbm_write_cycles(512)
     if mn == "KV.STORE_BLOCK":
+        if d["srcA"] == 2 or d["srcB"] == 3:
+            return T_FIRST + hbm_write_cycles(d["count"] * 196)
         return T_FIRST + hbm_write_cycles(d["count"] * 256 * 2)
     if mn == "KV.LOAD":
         w = d["count"] * 256 * (2 if d["sel"] == 2 else 1)
