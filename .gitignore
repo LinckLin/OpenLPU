@@ -36,7 +36,11 @@ obj_*/
 # --- VCS/DA 运行时目录（.daidir 内含环境快照，可能携带凭据，务必不上传） ---
 *.daidir/
 
-# --- SMIC28 SRAM 宏物理视图（GDS2/CDL 版图，MB 级可再生，GEN.md 有生成命令） ---
+# --- SMIC28 SRAM 宏商业 PDK 产物（.lib/.lef/.gds2/.cdl/.clf，非开源；由
+#     asic/smc28/setup_smic28.sh 从编译器包再生成至 SMIC28_MACRO_DIR，不入仓库；
+#     历史泄漏已按 D18 处置，见 docs/p10/asic-report.md §10.7） ---
+asic/sram_macros/**/*.lib
+asic/sram_macros/**/*.lef
 asic/sram_macros/**/*.gds2
 asic/sram_macros/**/*.cdl
 asic/sram_macros/**/*.clf
