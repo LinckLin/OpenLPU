@@ -73,9 +73,17 @@ plans/         各节点计划与评审记录
 
 ## Synopsys 工具复现注（DC/VCS）
 
-- DC：`DC_HOME=/home/public/app/synopsys/syn/O-2018.06-SP1`、license
+- DC（sky130 旧口径）：`DC_HOME=/home/public/app/synopsys/syn/O-2018.06-SP1`、license
   `LM_LICENSE_FILE=27000@<license-server>`（license 服务器随部署环境配置，本仓库实测为
   `bics109`）；流程 `bash asic/dc/run_dc.sh`（见 `docs/p10/asic-report.md` §10）。
+- DC（SMIC28 新基线，D18）：先 `bash asic/smc28/setup_smic28.sh` 从本地 PDK 生成宏与
+  库（宏按 `asic/sram_macros/*/GEN.md` 从编译器包再生成至 `SMIC28_MACRO_DIR`，默认
+  `/home/public/PDK/SMIC28/macros_out`；std cell 树根 `SMIC28_STD_DIR` 默认
+  `/home/public/PDK/SMIC28/STDcell/SCC28NHKCP_HDC30P140_RVT_V0p2`；宏源包
+  `SMIC28_PKG_ROOT` 默认 `/home/public/PDK/SMIC28/SRAM_Ccompiler_ARM20240823`，
+  兼容 shim 由 skill `smic28-sram-compiler` 提供），再
+  `DC_TECH=smic28 bash asic/dc/run_dc.sh <corner> synth_top`。商业 PDK 产物
+  （.lib/.lef/.gds2/.cdl/.clf）不入公开仓库，见 `docs/p10/asic-report.md` §10.7。
 - VCS：必须在 Synopsys CentOS 7 兼容命名空间（snps-centos7，glibc 2.17）下编译运行；
   `make -C asic/vcs`（见报告 §11）。
 

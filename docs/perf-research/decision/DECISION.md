@@ -102,4 +102,25 @@ SRAM 宏（4096×64，每 64b 字 4 entry×16b bf16，地址 `{ch[6:0], n[6:2]}`
 （内存 40.7→5.2 GB、无 256 读口爆炸）、compile_ultra 跑通、tt Fmax ≈ 14.7 MHz**——关键路径
 在逻辑侧 `rope_sincos` 组合锥（68.11 ns，宏不参与），证实阶段 2 `ang4096x64` 角度缓存是
 消除该锥的直接降路径。co-sim 3/3 0 ULP、回归 24/24、qsim 52、lint/build 过。
-详情：`docs/perf-research/decision/rotator-impl.md` §3.2③。
+
+## 7. 阶段 2 降路径裁决更新（2026-08-17，round-2 评审一致后撤销）
+
+**撤销 §6 的「阶段 2 `ang4096x64` 角度缓存是消除该锥的直接降路径」**。round-2 对
+`plans/fmax-pipeline-plan.md`（锥流水化）与 `plans/smic28-rebaseline-plan.md`（SMIC28
+全流程重立）两份计划评审一致，据此更新主降路径：
+
+- **角度缓存否决（如实推演）**：`ang4096x64`（4096 字×64b=32 KB）仅容 128 位置
+  （每位置 64 对 cos/sin bf16=256 B）；滑动窗口 R=2052 位置全量缓存需 2052×256 B=
+  525 KB≈4.2 Mbit→28nm 约 1.7–2.8 mm²（按 1.5–2.5 Mbit/mm²），远超 28nm 控制平面
+  逻辑面积；128 位置滑动缓存每 decode 步失效 2052−128=1924 次重算→每层
+  1924×64≈123K 次 rope_sincos，远超 HBM 预算 26,317 cyc 容纳能力，回到原墙。
+  故角度缓存**不为主降路径**；`ang4096x64` 宏保留备用（未来小窗/短序列）。
+- **主路径 = 行生产锥 register-slice 流水化**：把 kv_bfeed K 行生产组合锥（68.11 ns，
+  全锥 ≈28–31 顺序 op 级）切成 ~10–12 级流水、每级 ~2–3 op（含 rope_sincos 内部
+  op 级切分：Cody-Waite 归约后、LUT 取表后、Hermite 每乘加对之间）；op 次序与舍入
+  次序不变 → co-sim 仍 0 ULP。详见 `plans/fmax-pipeline-plan.md`。
+- **工艺口径**：14.7 MHz 仅作 sky130 历史参考值；验收锚定 SMIC28 新基线（D18）的
+  pre-pipeline Fmax 为「前值」、流水化后 28nm Fmax 为「后值」。
+
+详情：`docs/perf-research/decision/rotator-impl.md` §3.2③、`docs/p10/asic-report.md`
+§10.7（D18 双工艺对比）。

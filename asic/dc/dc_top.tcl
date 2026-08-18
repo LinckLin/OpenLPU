@@ -62,6 +62,7 @@ puts "INFO: tech=$tech corner=$corner compile=$compile"
 puts "INFO: link_library=$link_library"
 set tag $corner
 if {$tech == "smic28"} { set tag "smic28_${corner}" }
+if {[info exists env(DC_LABEL)] && $env(DC_LABEL) != ""} { set tag "${tag}_$env(DC_LABEL)" }
 
 # --- read + elaborate --------------------------------------------------------
 # synth_top.sv `include`s qcore_pkg.sv + command_processor.sv (which transitively

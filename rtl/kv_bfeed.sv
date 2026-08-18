@@ -12,8 +12,9 @@
 //   V dequant:  v_hat = bf16(q4[c] * s_v)
 //   K rotate:   HF rotate_half in bf16 arithmetic (per-op rounding), absolute
 //               position pos_base + n, theta = 1e6 (frozen ROPE_INVF LUT).
-// The same softfloat core + rope_sincos used by the vector ROPE op and
-// kv_quantdequant — no new numeric path.
+// The same softfloat core is used; the rotate cone inlines rope_sincos's exact
+// op sequence (Cody-Waite + Hermite, op/rounding order preserved) and is
+// register-sliced into a 13-stage pipeline (S0..S12) + final combine into row[] — no new numeric path.
 //
 // K path (rotate_k=1): precompute k_hat[128][N] into the kh4096x64 SRAM macro
 //   (4096 x 64; word {ch[6:0], n[6:2]} packs 4 tokens x 16b bf16), then produce
@@ -103,6 +104,42 @@ module kv_bfeed #(
   logic [1:0]  prod_phase;     // 0=ch-word read in flight, 1=xi-word read, 2=rot
   logic [4:0]  prod_pn;        // word-group index 0..ngrp-1
   logic [63:0] word_ch;        // registered row_ch 64-bit word
+  // ---- rotation pipeline (register-slice of the S_PROD compute cone) -------
+  // The K row-production cone (rope_sincos Cody-Waite + Hermite + rotate +
+  // bf16 rounding) is cut into 13 register stages (S0..S12), each ~2-3
+  // soft-float ops (see the pipeline always_ff below).  Op order and rounding
+  // order are unchanged -> 0 ULP bit-exact.
+  logic [3:0]  pipe_cnt;         // pipeline stage counter 0..13
+  logic        pipe_run;         // 1 while the rotation pipeline is shifting
+  logic [31:0] pipe_xr  [0:3];   // S0 capture: xr = bf16_to_fp32(ch word)
+  logic [31:0] pipe_xi  [0:3];   // S0 capture: xi = bf16_to_fp32(xi word)
+  logic [31:0] s_ang    [0:3];   // S0 out: angle = mul(i32_to_f32(posn), invf)
+  logic [31:0] s_nf     [0:3];   // S1 out: nf = mul(ang, 1/2pi)
+  logic [31:0] s_n      [0:3];   // S1 out: n  = f32_to_i32_rne(nf)
+  logic [31:0] s_n2phi  [0:3];   // S2 out: mul(i32_to_f32(n), TWO_PI_HI)
+  logic [31:0] s_n2plo  [0:3];   // S2 out: mul(i32_to_f32(n), TWO_PI_LO)
+  logic [31:0] s_ang2   [0:3];   // S2 out: angle carried forward
+  logic [31:0] s_r1     [0:3];   // S3 out: x - n2phi - n2plo (two subs)
+  logic [31:0] s_r      [0:3];   // S4 out: [0,2pi) fold (conditional 2 adds)
+  logic [31:0] s_u      [0:3];   // S5 out: u = mul(r, N/(2pi))
+  logic [31:0] s_frac   [0:3];   // S6 out: f = u - i32_to_f32(i)
+  logic [10:0] s_i      [0:3];   // S6 out: LUT index i = floor(u)
+  logic [31:0] s_sin0   [0:3];   // S7 out: LUT_SIN[i]
+  logic [31:0] s_cos0   [0:3];   // S7 out: LUT_COS[i]
+  logic [31:0] s_h      [0:3];   // S7 out: h = mul(f, 2pi/N)
+  logic [31:0] s_t1     [0:3];   // S8 out: mul(sin0, 1/2)
+  logic [31:0] s_t2     [0:3];   // S8 out: mul(cos0, 1/6)
+  logic [31:0] s_u1     [0:3];   // S8 out: mul(cos0, 1/2)
+  logic [31:0] s_u2     [0:3];   // S8 out: mul(sin0, 1/6)
+  logic [31:0] s_t3     [0:3];   // S9 out: t1 + h*t2
+  logic [31:0] s_u3     [0:3];   // S9 out: u1 - h*u2
+  logic [31:0] s_t4     [0:3];   // S10 out: cos0 - h*t3
+  logic [31:0] s_u4     [0:3];   // S10 out: sin0 + h*u3
+  logic [31:0] s_res_sin[0:3];   // S11 out: sin0 + h*t4
+  logic [31:0] s_res_cos[0:3];   // S11 out: cos0 - h*u4
+  logic [31:0] s_t1r    [0:3];   // S12 out: round(mul(xr, cos_d))
+  logic [31:0] s_t2r    [0:3];   // S12 out: round(mul(xi, sin_d))
+
 
   localparam logic [3:0]
     S_IDLE = 4'd0,
@@ -211,11 +248,15 @@ module kv_bfeed #(
       s_f <= 32'b0; row_ch_r <= 16'b0; vbyte <= 8'b0;
       vsub <= 4'b0; vn <= 8'b0; row_valid <= 1'b0;
       kn_wait <= 1'b0; prod_phase <= 2'b0; prod_pn <= 5'b0;
+      pipe_cnt <= 4'b0; pipe_run <= 1'b0;
+
     end else begin
       if (start) begin
         // (re-)precompute on a fresh tile/batch (works from any state)
         ch <= 8'b0; n <= 8'b0; sub <= 3'b0; accb <= 8'b0;
         kn_wait <= 1'b0; prod_phase <= 2'b0; prod_pn <= 5'b0;
+        pipe_cnt <= 4'b0; pipe_run <= 1'b0;
+
         if (rotate_k) state <= S_KNORM;
         else          state <= S_DONE;   // V: no precompute
       end else begin
@@ -282,37 +323,22 @@ module kv_bfeed #(
           end
 
           S_PROD: begin
-            case (prod_phase)
-              2'd0: begin
-                // ch-word read issued last cycle is in flight
-                prod_phase <= 2'd1;
-              end
-              2'd1: begin
-                word_ch <= kh_rdata;      // ch-word landed
-                prod_phase <= 2'd2;
-              end
-              default: begin
-                // xi-word landed (kh_rdata); rotate the 4-token group
+            if (pipe_run) begin
+              // rotation pipeline (13 stages S0..S12); this is the final cycle:
+              // combine the rotated lanes and write row[] (single FSM driver)
+              if (pipe_cnt == 4'd13) begin
                 for (i = 0; i < 4; i++) begin
-                  logic [31:0] xr, xi, ang, cos_d, sin_d, t1, t2, r;
-                  logic [63:0] sc;
-                  logic [15:0] posn;
-                  integer token;
-                  token = {27'b0, prod_pn, 2'b0} + i;   // prod_pn*4 + i
+                  integer      token;
+                  logic [31:0] r;
+                  token = {27'b0, prod_pn, 2'b0} + i;
                   if (token < N) begin
-                    xr  = bf16_to_fp32(word_ch[i*16 +: 16]);
-                    xi  = bf16_to_fp32(kh_rdata[i*16 +: 16]);
-                    posn = pos_base + token[15:0];
-                    ang = fp32_mul(i32_to_f32({16'b0, posn}), ROPE_INVF[row_ch_r[5:0]]);
-                    sc  = rope_sincos(ang);
-                    cos_d = bf16_to_fp32(fp32_to_bf16(sc[63:32]));
-                    sin_d = bf16_to_fp32(fp32_to_bf16(sc[31:0]));
-                    t1  = bf16_to_fp32(fp32_to_bf16(fp32_mul(xr, cos_d)));
-                    t2  = bf16_to_fp32(fp32_to_bf16(fp32_mul(xi, sin_d)));
-                    r   = row_ch_r[6] ? fp32_add(t1, t2) : fp32_sub(t1, t2);
+                    r = row_ch_r[6] ? fp32_add(s_t1r[i], s_t2r[i])
+                                    : fp32_sub(s_t1r[i], s_t2r[i]);
                     row[token] = bf16_to_fp32(fp32_to_bf16(r));
                   end
                 end
+                pipe_run <= 1'b0;
+                pipe_cnt <= 4'd0;
                 if (prod_pn == ngrp - 1) begin
                   row_valid <= 1'b1;
                   prod_pn <= 5'b0; prod_phase <= 2'd0;
@@ -321,9 +347,28 @@ module kv_bfeed #(
                   prod_pn <= prod_pn + 5'd1;
                   prod_phase <= 2'd0;
                 end
+              end else begin
+                pipe_cnt <= pipe_cnt + 4'd1;
               end
-            endcase
+            end else begin
+              case (prod_phase)
+                2'd0: begin
+                  // ch-word read issued last cycle is in flight
+                  prod_phase <= 2'd1;
+                end
+                2'd1: begin
+                  word_ch <= kh_rdata;      // ch-word landed
+                  prod_phase <= 2'd2;
+                end
+                default: begin
+                  // xi-word landed (kh_rdata); launch the rotation pipeline
+                  pipe_run <= 1'b1;
+                  pipe_cnt <= 4'd0;
+                end
+              endcase
+            end
           end
+
 
           S_VSCL: begin
             if (sub == 3'd0) begin
@@ -364,6 +409,144 @@ module kv_bfeed #(
           default: state <= S_IDLE;
         endcase
       end
+    end
+  end
+
+  // ---- rotation pipeline datapath (register-slice of the S_PROD cone) ------
+  // The K row-production combinational cone (rope_sincos Cody-Waite + Hermite
+  // + rotate + bf16 rounding, ~28-31 sequential op levels) is cut into 13
+  // register stages (S0..S12), each ~2-3 soft-float ops.  Cut points: after
+  // Cody-Waite reduction, after LUT fetch, between each Hermite multiply-add
+  // pair, at the rotate, and at the bf16 rounding.  Op order and rounding
+  // order are unchanged, so the result is bit-identical (0 ULP) to the
+  // un-pipelined cone.  The row_valid pulse handshake is unchanged (CP waits
+  // for the pulse, no cycle counting).
+  always_ff @(posedge clk) begin
+    integer i;
+    if (pipe_run) begin
+      case (pipe_cnt)
+        4'd0: begin
+          // S0: capture rotate operands + per-lane angle (posn*invf)
+          for (i = 0; i < 4; i++) begin
+            logic [15:0] posn;
+            integer      token;
+            token = {27'b0, prod_pn, 2'b0} + i;
+            posn  = pos_base + token[15:0];
+            pipe_xr[i] <= bf16_to_fp32(word_ch[i*16 +: 16]);
+            pipe_xi[i] <= bf16_to_fp32(kh_rdata[i*16 +: 16]);
+            s_ang[i]   <= fp32_mul(i32_to_f32({16'b0, posn}), ROPE_INVF[row_ch_r[5:0]]);
+          end
+        end
+        4'd1: begin
+          // S1: Cody-Waite nf = x*(1/2pi), n = round-to-nearest-even(nf)
+          for (i = 0; i < 4; i++) begin
+            logic [31:0] nf;
+            nf = fp32_mul(s_ang[i], INV_2PI);
+            s_nf[i] <= nf;
+            s_n[i]  <= f32_to_i32_rne(nf);
+          end
+        end
+        4'd2: begin
+          // S2: n*2pi high/low parts (i32_to_f32(n) shared)
+          for (i = 0; i < 4; i++) begin
+            logic [31:0] ni;
+            ni = i32_to_f32(s_n[i]);
+            s_n2phi[i] <= fp32_mul(ni, TWO_PI_HI);
+            s_n2plo[i] <= fp32_mul(ni, TWO_PI_LO);
+            s_ang2[i]  <= s_ang[i];
+          end
+        end
+        4'd3: begin
+          // S3: two-part subtract r = x - n2phi - n2plo
+          for (i = 0; i < 4; i++) begin
+            logic [31:0] r1;
+            r1 = fp32_sub(s_ang2[i], s_n2phi[i]);
+            s_r1[i] <= fp32_sub(r1, s_n2plo[i]);
+          end
+        end
+        4'd4: begin
+          // S4: fold negative r back into [0, 2pi)
+          for (i = 0; i < 4; i++) begin
+            s_r[i] <= s_r1[i][31] ? fp32_add(fp32_add(s_r1[i], TWO_PI_HI), TWO_PI_LO)
+                                  : s_r1[i];
+          end
+        end
+        4'd5: begin
+          // S5: u = r * N/(2pi)
+          for (i = 0; i < 4; i++) s_u[i] <= fp32_mul(s_r[i], N_OVER_2PI);
+        end
+        4'd6: begin
+          // S6: LUT index i = floor(u), fraction f = u - i32_to_f32(i)
+          for (i = 0; i < 4; i++) begin
+            logic [7:0]  e;
+            logic [31:0] u;
+            logic [10:0] ii;
+            logic [31:0] ff;
+            integer      shf;
+            u = s_u[i];
+            e = u[30:23];
+            if (e < 8'd127) begin
+              ii = 11'b0;
+              ff = u;
+            end else begin
+              shf = 8'd150 - e;
+              ii = {1'b1, u[22:0]} >> shf;
+              ff = fp32_sub(u, i32_to_f32(32'(ii)));
+            end
+            s_i[i] <= ii;
+            s_frac[i] <= ff;
+          end
+        end
+        4'd7: begin
+          // S7: LUT fetch + sub-interval offset h = f * (2pi/N)
+          for (i = 0; i < 4; i++) begin
+            s_sin0[i] <= ROPE_LUT_SIN[s_i[i]];
+            s_cos0[i] <= ROPE_LUT_COS[s_i[i]];
+            s_h[i]    <= fp32_mul(s_frac[i], 32'h3BC90FDB);
+          end
+        end
+        4'd8: begin
+          // S8: Hermite coefficient setup (sin and cos lanes in parallel)
+          for (i = 0; i < 4; i++) begin
+            s_t1[i] <= fp32_mul(s_sin0[i], F_HALF);
+            s_t2[i] <= fp32_mul(s_cos0[i], 32'h3E2AAAAB);
+            s_u1[i] <= fp32_mul(s_cos0[i], F_HALF);
+            s_u2[i] <= fp32_mul(s_sin0[i], 32'h3E2AAAAB);
+          end
+        end
+        4'd9: begin
+          // S9: t3 = t1 + h*t2 ; u3 = u1 - h*u2
+          for (i = 0; i < 4; i++) begin
+            s_t3[i] <= fp32_add(s_t1[i], fp32_mul(s_h[i], s_t2[i]));
+            s_u3[i] <= fp32_sub(s_u1[i], fp32_mul(s_h[i], s_u2[i]));
+          end
+        end
+        4'd10: begin
+          // S10: t4 = cos0 - h*t3 ; u4 = sin0 + h*u3
+          for (i = 0; i < 4; i++) begin
+            s_t4[i] <= fp32_sub(s_cos0[i], fp32_mul(s_h[i], s_t3[i]));
+            s_u4[i] <= fp32_add(s_sin0[i], fp32_mul(s_h[i], s_u3[i]));
+          end
+        end
+        4'd11: begin
+          // S11: res_sin = sin0 + h*t4 ; res_cos = cos0 - h*u4
+          for (i = 0; i < 4; i++) begin
+            s_res_sin[i] <= fp32_add(s_sin0[i], fp32_mul(s_h[i], s_t4[i]));
+            s_res_cos[i] <= fp32_sub(s_cos0[i], fp32_mul(s_h[i], s_u4[i]));
+          end
+        end
+        4'd12: begin
+          // S12: round cos/sin to bf16, rotate: t1r = xr*cos_d, t2r = xi*sin_d
+          for (i = 0; i < 4; i++) begin
+            logic [31:0] cos_d, sin_d;
+            cos_d = bf16_to_fp32(fp32_to_bf16(s_res_cos[i]));
+            sin_d = bf16_to_fp32(fp32_to_bf16(s_res_sin[i]));
+            s_t1r[i] <= bf16_to_fp32(fp32_to_bf16(fp32_mul(pipe_xr[i], cos_d)));
+            s_t2r[i] <= bf16_to_fp32(fp32_to_bf16(fp32_mul(pipe_xi[i], sin_d)));
+          end
+        end
+        default: ;
+      endcase
     end
   end
 

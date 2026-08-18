@@ -108,10 +108,13 @@
        rope 锥**（`rope_sincos` Cody-Waite 归约 + Hermite 插值 + rotate 乘加链，纯 sky130
        组合逻辑），**不含宏**（宏 CLK→Q = 0.41 ns，非瓶颈）。
      - **结论**：khat 存储墙已消除（内存 40.7→5.2 GB、无 256 读口爆炸），但 on-the-fly
-       RoPE 的 `rope_sincos` 组合锥（68 ns）成为新的 Fmax 上限——**证实计划的阶段 2 降路径
-       必要**：`ang4096x64` 位置缓存（cos/sin 预计算入宏、逐行计算改查表）是消除该锥的
-       直接手段。跨工艺口径：关键路径 100% 在 sky130 逻辑侧，故 14.7 MHz 为控制平面逻辑
-       Fmax 的可达性下界（宏不参与）。
+       RoPE 的 `rope_sincos` 组合锥（68 ns）成为新的 Fmax 上限。**【裁决更新 2026-08-17】**
+       原「阶段 2 `ang4096x64` 角度缓存是消除该锥的直接降路径」已撤销（见 DECISION.md §7）：
+       角度缓存 128 位置/32 KB 容量不足、全量缓存 525 KB≈1.7–2.8 mm²、滑动失效 1924 次重算，
+       均回到原墙；主降路径改为**行生产锥 register-slice 流水化**（~10–12 级、每级 2–3 op，
+       0 ULP，见 `plans/fmax-pipeline-plan.md`）。跨工艺口径：本复跑关键路径 100% 在
+       sky130 逻辑侧，故 14.7 MHz 为控制平面逻辑 Fmax 的可达性下界（宏不参与）；14.7 MHz
+       仅作 sky130 历史参考，SMIC28 双基线见 `docs/p10/asic-report.md` §10.7（D18）。
      - **ss 角落未跑（验收项如实记录）**：tt 单一角落 compile_ultra 已 >5 h（同基线
        136 MHz 方法学），按计划「如超时只跑 tt 并如实说明」执行；ss Fmax 未量化。
        pre-macro 阶段的过期 ss 报告已标注 `.STALE-presto` 后缀避免误读。

@@ -27,6 +27,7 @@ abc.history
 *.syn
 *.mr
 *.svf
+.dwsvf-*
 lc_output.txt
 
 # --- Verilator 构建目录（obj_*/ 前缀与 *_obj/ 后缀均覆盖） ---

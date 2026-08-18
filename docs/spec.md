@@ -88,6 +88,17 @@
   不构成多序列/多用户批处理（spec §6 backlog 的 batch>1 仍为独立项）。投机解码立项须先过
   实测门槛（0.6B 贪心 n-gram α≥0.4，docs/perf-research/decision/DECISION.md）。
 
+- **D18 ASIC 工艺基线切换 SMIC28 + 开源合规**（2026-08-17，round-2 评审一致裁决）：
+  ASIC 物理口径由 sky130（130 nm/1.8 V）切换 **SMIC28（28HKCP/0.9 V，HDC30P140 RVT）**，
+  消除「sky130 逻辑 + SMIC28 宏」的跨工艺混搭（原混搭仅作可达性评估，非流片口径）。
+  理由：控制平面 Fmax 瓶颈（`rope_sincos` 锥）在逻辑侧，28 nm 同工艺基线才可对标
+  「锥流水化」优化目标（≥100 MHz 28 nm 口径）；数据通路（matrix_engine/vector_engine）
+  与 SRAM 按物理宏黑盒口径不变。商业 PDK 产物（宏 .lib/.lef/.gds2/.cdl/.clf）不入公开
+  仓库——`git filter-repo` 历史重写（d8fb867 起）+ force-push 已完成，`.v`/`GEN.md`/
+  `PORTS.md` 保留；换机复现链 = `asic/smc28/setup_smic28.sh`（见 README「Synopsys 工具
+  复现注」）。双口径对比表（legacy 列 = 跨工艺可达性口径 sky130 逻辑 + SMIC28 宏）与
+  pre/post-pipeline Fmax 数字见 `docs/p10/asic-report.md` §10.7。
+
 ## 4. 关键数值速查
 
 | 量 | 值 |
