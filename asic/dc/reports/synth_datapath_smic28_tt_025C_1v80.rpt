@@ -1,0 +1,1192 @@
+==== DC tech=smic28 corner=tt_025C_1v80 design=synth_datapath (compile_ultra) ====
+Information: Updating design information... (UID-85)
+ 
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -max_paths 10
+        -sort_by slack
+Design : synth_datapath
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 13:48:13 2026
+****************************************
+
+Operating Conditions: tt_v0p9_25c   Library: scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+Wire Load Model Mode: top
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[8]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 f
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 r
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 f
+  U3289/ZN (OAI22V1_140P7T30R)                            0.02       0.19 r
+  U3290/Z (XOR2V2_140P7T30R)                              0.03       0.22 r
+  U2891/ZN (NAND2V2_140P7T30R)                            0.02       0.23 f
+  U2890/ZN (OAI12V2_140P7T30R)                            0.02       0.25 r
+  U2832/ZN (AOI12V2_140P7T30R)                            0.01       0.27 f
+  U3313/ZN (OAI12V4_140P7T30R)                            0.01       0.28 r
+  U2917/ZN (AOI12V4_140P7T30R)                            0.01       0.30 f
+  U2831/ZN (OAI12V4_140P7T30R)                            0.02       0.31 r
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 f
+  U2787/ZN (OAI12V4_140P7T30R)                            0.02       0.34 r
+  U2829/ZN (AOI12V6_140P7T30R)                            0.01       0.35 f
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 r
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.38 f
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 r
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 f
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 r
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.42 f
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.43 r
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 f
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 r
+  U2923/ZN (AOI12V4_140P7T30R)                            0.01       0.47 f
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.48 r
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.53 f
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.54 r
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.55 f
+  U3492/Z (OR2V4_140P7T30R)                               0.02       0.57 f
+  U2827/ZN (OAI12V4_140P7T30R)                            0.01       0.59 r
+  U2925/ZN (INV2_140P7T30R)                               0.02       0.60 f
+  U2882/ZN (INV4_140P7T30R)                               0.01       0.61 r
+  U2823/ZN (NAND2V3_140P7T30R)                            0.01       0.63 f
+  U3530/Z (CLKXOR2V6_140P7T30R)                           0.02       0.65 f
+  U3535/CO (AD1V4_140P7T30R)                              0.03       0.68 f
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 f
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 f
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 f
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 f
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 r
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 f
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 r
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 f
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 r
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 f
+  U2792/ZN (NOR2XBV4_140P7T30R)                           0.02       0.90 r
+  U2936/ZN (NAND2V2_140P7T30R)                            0.03       0.93 f
+  U2850/ZN (NOR2V4_140P7T30R)                             0.02       0.95 r
+  U2797/ZN (INV2_140P7T30R)                               0.01       0.97 f
+  U2839/ZN (OAI112V2_140P7T30R)                           0.02       0.98 r
+  u_sub/y_reg[8]/D (DQV2_140P7T30R)                       0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[8]/CK (DQV2_140P7T30R)                      0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[9]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 f
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 r
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 f
+  U3289/ZN (OAI22V1_140P7T30R)                            0.02       0.19 r
+  U3290/Z (XOR2V2_140P7T30R)                              0.03       0.22 r
+  U2891/ZN (NAND2V2_140P7T30R)                            0.02       0.23 f
+  U2890/ZN (OAI12V2_140P7T30R)                            0.02       0.25 r
+  U2832/ZN (AOI12V2_140P7T30R)                            0.01       0.27 f
+  U3313/ZN (OAI12V4_140P7T30R)                            0.01       0.28 r
+  U2917/ZN (AOI12V4_140P7T30R)                            0.01       0.30 f
+  U2831/ZN (OAI12V4_140P7T30R)                            0.02       0.31 r
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 f
+  U2787/ZN (OAI12V4_140P7T30R)                            0.02       0.34 r
+  U2829/ZN (AOI12V6_140P7T30R)                            0.01       0.35 f
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 r
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.38 f
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 r
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 f
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 r
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.42 f
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.43 r
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 f
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 r
+  U2923/ZN (AOI12V4_140P7T30R)                            0.01       0.47 f
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.48 r
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.53 f
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.54 r
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.55 f
+  U3492/Z (OR2V4_140P7T30R)                               0.02       0.57 f
+  U2827/ZN (OAI12V4_140P7T30R)                            0.01       0.59 r
+  U2925/ZN (INV2_140P7T30R)                               0.02       0.60 f
+  U2882/ZN (INV4_140P7T30R)                               0.01       0.61 r
+  U2823/ZN (NAND2V3_140P7T30R)                            0.01       0.63 f
+  U3530/Z (CLKXOR2V6_140P7T30R)                           0.02       0.65 f
+  U3535/CO (AD1V4_140P7T30R)                              0.03       0.68 f
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 f
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 f
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 f
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 f
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 r
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 f
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 r
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 f
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 r
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 f
+  U2792/ZN (NOR2XBV4_140P7T30R)                           0.02       0.90 r
+  U2936/ZN (NAND2V2_140P7T30R)                            0.03       0.93 f
+  U2850/ZN (NOR2V4_140P7T30R)                             0.02       0.95 r
+  U2797/ZN (INV2_140P7T30R)                               0.01       0.97 f
+  U3016/ZN (OAI112V2_140P7T30R)                           0.02       0.98 r
+  u_sub/y_reg[9]/D (DQV2_140P7T30R)                       0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[9]/CK (DQV2_140P7T30R)                      0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[10]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 f
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 r
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 f
+  U3289/ZN (OAI22V1_140P7T30R)                            0.02       0.19 r
+  U3290/Z (XOR2V2_140P7T30R)                              0.03       0.22 r
+  U2891/ZN (NAND2V2_140P7T30R)                            0.02       0.23 f
+  U2890/ZN (OAI12V2_140P7T30R)                            0.02       0.25 r
+  U2832/ZN (AOI12V2_140P7T30R)                            0.01       0.27 f
+  U3313/ZN (OAI12V4_140P7T30R)                            0.01       0.28 r
+  U2917/ZN (AOI12V4_140P7T30R)                            0.01       0.30 f
+  U2831/ZN (OAI12V4_140P7T30R)                            0.02       0.31 r
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 f
+  U2787/ZN (OAI12V4_140P7T30R)                            0.02       0.34 r
+  U2829/ZN (AOI12V6_140P7T30R)                            0.01       0.35 f
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 r
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.38 f
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 r
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 f
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 r
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.42 f
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.43 r
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 f
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 r
+  U2923/ZN (AOI12V4_140P7T30R)                            0.01       0.47 f
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.48 r
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.53 f
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.54 r
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.55 f
+  U3492/Z (OR2V4_140P7T30R)                               0.02       0.57 f
+  U2827/ZN (OAI12V4_140P7T30R)                            0.01       0.59 r
+  U2925/ZN (INV2_140P7T30R)                               0.02       0.60 f
+  U2882/ZN (INV4_140P7T30R)                               0.01       0.61 r
+  U2823/ZN (NAND2V3_140P7T30R)                            0.01       0.63 f
+  U3530/Z (CLKXOR2V6_140P7T30R)                           0.02       0.65 f
+  U3535/CO (AD1V4_140P7T30R)                              0.03       0.68 f
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 f
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 f
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 f
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 f
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 r
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 f
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 r
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 f
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 r
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 f
+  U2792/ZN (NOR2XBV4_140P7T30R)                           0.02       0.90 r
+  U2936/ZN (NAND2V2_140P7T30R)                            0.03       0.93 f
+  U2850/ZN (NOR2V4_140P7T30R)                             0.02       0.95 r
+  U2797/ZN (INV2_140P7T30R)                               0.01       0.97 f
+  U2888/ZN (OAI112V2_140P7T30R)                           0.02       0.98 r
+  u_sub/y_reg[10]/D (DQV2_140P7T30R)                      0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[10]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[11]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 f
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 r
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 f
+  U3289/ZN (OAI22V1_140P7T30R)                            0.02       0.19 r
+  U3290/Z (XOR2V2_140P7T30R)                              0.03       0.22 r
+  U2891/ZN (NAND2V2_140P7T30R)                            0.02       0.23 f
+  U2890/ZN (OAI12V2_140P7T30R)                            0.02       0.25 r
+  U2832/ZN (AOI12V2_140P7T30R)                            0.01       0.27 f
+  U3313/ZN (OAI12V4_140P7T30R)                            0.01       0.28 r
+  U2917/ZN (AOI12V4_140P7T30R)                            0.01       0.30 f
+  U2831/ZN (OAI12V4_140P7T30R)                            0.02       0.31 r
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 f
+  U2787/ZN (OAI12V4_140P7T30R)                            0.02       0.34 r
+  U2829/ZN (AOI12V6_140P7T30R)                            0.01       0.35 f
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 r
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.38 f
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 r
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 f
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 r
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.42 f
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.43 r
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 f
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 r
+  U2923/ZN (AOI12V4_140P7T30R)                            0.01       0.47 f
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.48 r
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.53 f
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.54 r
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.55 f
+  U3492/Z (OR2V4_140P7T30R)                               0.02       0.57 f
+  U2827/ZN (OAI12V4_140P7T30R)                            0.01       0.59 r
+  U2925/ZN (INV2_140P7T30R)                               0.02       0.60 f
+  U2882/ZN (INV4_140P7T30R)                               0.01       0.61 r
+  U2823/ZN (NAND2V3_140P7T30R)                            0.01       0.63 f
+  U3530/Z (CLKXOR2V6_140P7T30R)                           0.02       0.65 f
+  U3535/CO (AD1V4_140P7T30R)                              0.03       0.68 f
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 f
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 f
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 f
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 f
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 r
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 f
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 r
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 f
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 r
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 f
+  U2792/ZN (NOR2XBV4_140P7T30R)                           0.02       0.90 r
+  U2936/ZN (NAND2V2_140P7T30R)                            0.03       0.93 f
+  U2850/ZN (NOR2V4_140P7T30R)                             0.02       0.95 r
+  U2797/ZN (INV2_140P7T30R)                               0.01       0.97 f
+  U2840/ZN (OAI112V2_140P7T30R)                           0.02       0.98 r
+  u_sub/y_reg[11]/D (DQV2_140P7T30R)                      0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[11]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_sub/a0_reg[17]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_mul/prod_hi_reg[24]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_sub/a0_reg[17]/CK (DQV2_140P7T30R)                    0.00       0.00 r
+  u_sub/a0_reg[17]/Q (DQV2_140P7T30R)                     0.05       0.05 f
+  U4063/ZN (XNOR2V2_140P7T30R)                            0.03       0.09 f
+  U3121/ZN (NOR2V2_140P7T30R)                             0.10       0.19 r
+  U4115/ZN (NAND2V2_140P7T30R)                            0.02       0.21 f
+  U4116/ZN (OAI12V2_140P7T30R)                            0.02       0.23 r
+  U4117/Z (XOR2V2_140P7T30R)                              0.03       0.26 r
+  U4303/CO (ADH1V2_140P7T30R)                             0.03       0.29 r
+  U3126/CO (ADH1V2_140P7T30R)                             0.03       0.32 r
+  U4254/CO (ADH1V2_140P7T30R)                             0.03       0.35 r
+  U4340/S (AD1V2_140P7T30R)                               0.05       0.40 f
+  U2833/S (AD1V2_140P7T30R)                               0.06       0.46 r
+  U4372/S (AD1V2_140P7T30R)                               0.05       0.50 f
+  U3133/Z (OR2V2_140P7T30R)                               0.02       0.52 f
+  U3138/ZN (AOI12V2_140P7T30R)                            0.01       0.53 r
+  U4638/ZN (OAI12V2_140P7T30R)                            0.01       0.55 f
+  U4639/ZN (AOI12V4_140P7T30R)                            0.02       0.57 r
+  U4708/ZN (OAI12V4_140P7T30R)                            0.01       0.58 f
+  U4739/ZN (AOI12V4_140P7T30R)                            0.01       0.60 r
+  U4770/ZN (OAI12V2_140P7T30R)                            0.02       0.61 f
+  U3168/ZN (AOI12V2_140P7T30R)                            0.02       0.63 r
+  U4829/ZN (OAI12V2_140P7T30R)                            0.02       0.65 f
+  U4858/ZN (AOI12V4_140P7T30R)                            0.02       0.67 r
+  U4886/ZN (OAI12V2_140P7T30R)                            0.02       0.69 f
+  U4912/ZN (AOI12V4_140P7T30R)                            0.02       0.70 r
+  U4936/ZN (OAI12V4_140P7T30R)                            0.01       0.72 f
+  U4961/ZN (AOI12V6_140P7T30R)                            0.01       0.73 r
+  U2795/ZN (OAI12V4_140P7T30R)                            0.01       0.75 f
+  U2763/ZN (AOI12V6_140P7T30R)                            0.02       0.76 r
+  U5021/ZN (OAI12V8_140P7T30R)                            0.01       0.77 f
+  U5038/ZN (AOI12V4_140P7T30R)                            0.02       0.79 r
+  U5054/ZN (OAI12V6_140P7T30R)                            0.01       0.80 f
+  U5071/ZN (AOI12V8_140P7T30R)                            0.01       0.82 r
+  U5084/ZN (OAI12V8_140P7T30R)                            0.01       0.83 f
+  U5097/ZN (AOI12V4_140P7T30R)                            0.01       0.84 r
+  U3167/ZN (OAI12V2_140P7T30R)                            0.02       0.86 f
+  U5117/ZN (AOI12V4_140P7T30R)                            0.02       0.87 r
+  U3166/ZN (OAI12V2_140P7T30R)                            0.02       0.89 f
+  U6470/CO (AD1V4_140P7T30R)                              0.03       0.92 f
+  U6472/CO (AD1V2_140P7T30R)                              0.03       0.95 f
+  U5124/Z (XOR2V2_140P7T30R)                              0.02       0.97 f
+  U3189/Z (AND2V2_140P7T30R)                              0.02       0.99 f
+  u_mul/prod_hi_reg[24]/D (DQV2_140P7T30R)                0.00       0.99 f
+  data arrival time                                                  0.99
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_mul/prod_hi_reg[24]/CK (DQV2_140P7T30R)               0.00       1.00 r
+  library setup time                                     -0.01       0.99
+  data required time                                                 0.99
+  --------------------------------------------------------------------------
+  data required time                                                 0.99
+  data arrival time                                                 -0.99
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[13]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 f
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 r
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 f
+  U3289/ZN (OAI22V1_140P7T30R)                            0.02       0.19 r
+  U3290/Z (XOR2V2_140P7T30R)                              0.03       0.22 r
+  U2891/ZN (NAND2V2_140P7T30R)                            0.02       0.23 f
+  U2890/ZN (OAI12V2_140P7T30R)                            0.02       0.25 r
+  U2832/ZN (AOI12V2_140P7T30R)                            0.01       0.27 f
+  U3313/ZN (OAI12V4_140P7T30R)                            0.01       0.28 r
+  U2917/ZN (AOI12V4_140P7T30R)                            0.01       0.30 f
+  U2831/ZN (OAI12V4_140P7T30R)                            0.02       0.31 r
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 f
+  U2787/ZN (OAI12V4_140P7T30R)                            0.02       0.34 r
+  U2829/ZN (AOI12V6_140P7T30R)                            0.01       0.35 f
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 r
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.38 f
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 r
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 f
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 r
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.42 f
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.43 r
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 f
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 r
+  U2923/ZN (AOI12V4_140P7T30R)                            0.01       0.47 f
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.48 r
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.53 f
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.54 r
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.55 f
+  U3492/Z (OR2V4_140P7T30R)                               0.02       0.57 f
+  U2827/ZN (OAI12V4_140P7T30R)                            0.01       0.59 r
+  U2925/ZN (INV2_140P7T30R)                               0.02       0.60 f
+  U2882/ZN (INV4_140P7T30R)                               0.01       0.61 r
+  U2823/ZN (NAND2V3_140P7T30R)                            0.01       0.63 f
+  U3530/Z (CLKXOR2V6_140P7T30R)                           0.02       0.65 f
+  U3535/CO (AD1V4_140P7T30R)                              0.03       0.68 f
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 f
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 f
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 f
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 f
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 r
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 f
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 r
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 f
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 r
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 f
+  U2792/ZN (NOR2XBV4_140P7T30R)                           0.02       0.90 r
+  U2944/ZN (NAND2V2_140P7T30R)                            0.02       0.93 f
+  U2851/ZN (INV4_140P7T30R)                               0.02       0.95 r
+  U2902/ZN (AOI22V1_140P7T30R)                            0.02       0.97 f
+  U2842/ZN (OAI112V2_140P7T30R)                           0.01       0.98 r
+  u_sub/y_reg[13]/D (DQV2_140P7T30R)                      0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[13]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_add/y_reg[15]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U2996/Z (AND2V2_140P7T30R)                              0.02       0.15 f
+  U3572/ZN (NAND2XBV2_140P7T30R)                          0.02       0.17 f
+  U3573/Z (BUFV12_140P7T30R)                              0.02       0.19 f
+  U3577/Z (XOR2V2_140P7T30R)                              0.03       0.22 f
+  U3586/ZN (NAND2V2_140P7T30R)                            0.01       0.23 r
+  U3587/ZN (OAI12V2_140P7T30R)                            0.01       0.25 f
+  U3588/ZN (AOI12V2_140P7T30R)                            0.02       0.27 r
+  U3601/ZN (OAI12V4_140P7T30R)                            0.02       0.29 f
+  U3608/ZN (AOI12V4_140P7T30R)                            0.02       0.30 r
+  U3145/ZN (OAI12V4_140P7T30R)                            0.02       0.32 f
+  U3619/ZN (AOI12V8_140P7T30R)                            0.01       0.33 r
+  U3625/ZN (OAI12V6_140P7T30R)                            0.01       0.34 f
+  U3632/ZN (AOI12V8_140P7T30R)                            0.01       0.36 r
+  U3638/ZN (OAI12V8_140P7T30R)                            0.01       0.37 f
+  U3645/ZN (AOI12V8_140P7T30R)                            0.01       0.38 r
+  U3651/ZN (OAI12V6_140P7T30R)                            0.01       0.40 f
+  U3658/ZN (AOI12V8_140P7T30R)                            0.01       0.41 r
+  U3664/ZN (OAI12V8_140P7T30R)                            0.01       0.42 f
+  U3671/ZN (AOI12V4_140P7T30R)                            0.02       0.44 r
+  U3677/ZN (OAI12V8_140P7T30R)                            0.01       0.45 f
+  U3684/ZN (AOI12V8_140P7T30R)                            0.01       0.46 r
+  U3690/ZN (OAI12V6_140P7T30R)                            0.01       0.48 f
+  U3697/ZN (AOI12V8_140P7T30R)                            0.01       0.49 r
+  U3703/ZN (OAI12V8_140P7T30R)                            0.01       0.50 f
+  U3710/ZN (AOI12V6_140P7T30R)                            0.01       0.52 r
+  U3724/Z (XOR2V2_140P7T30R)                              0.03       0.55 r
+  U2945/ZN (INV2_140P7T30R)                               0.01       0.56 f
+  U3820/Z (AO12V2_140P7T30R)                              0.02       0.58 f
+  U3821/ZN (AOI12V4_140P7T30R)                            0.02       0.60 r
+  U2826/ZN (OAI12V4_140P7T30R)                            0.01       0.61 f
+  U3822/ZN (INV2_140P7T30R)                               0.02       0.63 r
+  U3823/ZN (INV4_140P7T30R)                               0.01       0.64 f
+  U3843/ZN (NAND2V2_140P7T30R)                            0.01       0.65 r
+  U2954/Z (XOR2V2_140P7T30R)                              0.03       0.68 r
+  U3856/CO (AD1V4_140P7T30R)                              0.03       0.71 r
+  U2856/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.72 f
+  U2820/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.73 r
+  U2783/ZN (NAND2V2_140P7T30R)                            0.01       0.74 f
+  U3849/Z (AND3V6_140P7T30R)                              0.02       0.76 f
+  U2952/ZN (OAI12V4_140P7T30R)                            0.01       0.77 r
+  U3852/CO (AD1V4_140P7T30R)                              0.03       0.80 r
+  U2819/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.80 f
+  U3146/ZN (NAND2XBV4_140P7T30R)                          0.01       0.81 r
+  U2818/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.82 f
+  U2949/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 r
+  U2948/Z (XOR2V2_140P7T30R)                              0.02       0.85 r
+  U2816/ZN (NAND2V2_140P7T30R)                            0.01       0.86 f
+  U3111/ZN (NOR2V4_140P7T30R)                             0.01       0.87 r
+  U2813/ZN (NOR2V4_140P7T30R)                             0.01       0.88 f
+  U2947/Z (AND2V4_140P7T30R)                              0.02       0.91 f
+  U2946/ZN (NAND2V2_140P7T30R)                            0.01       0.92 r
+  U7079/ZN (OAI112V2_140P7T30R)                           0.02       0.94 f
+  U7080/ZN (AOI12V2_140P7T30R)                            0.02       0.96 r
+  U3059/ZN (OAI112V2_140P7T30R)                           0.02       0.98 f
+  u_add/y_reg[15]/D (DQV2_140P7T30R)                      0.00       0.98 f
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_add/y_reg[15]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[21]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_sub/y_reg[12]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[21]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[21]/Q (DQV2_140P7T30R)                   0.04       0.04 f
+  U2961/ZN (INV4_140P7T30R)                               0.01       0.05 r
+  U3248/ZN (NOR2V2_140P7T30R)                             0.01       0.06 f
+  U3250/ZN (NOR2V2_140P7T30R)                             0.01       0.07 r
+  U3251/ZN (NAND2V2_140P7T30R)                            0.01       0.08 f
+  U3252/ZN (NOR2V2_140P7T30R)                             0.01       0.09 r
+  U3253/ZN (NAND2V2_140P7T30R)                            0.02       0.11 f
+  U2892/ZN (OAI12V8_140P7T30R)                            0.02       0.13 r
+  U3112/Z (CLKOR2V16_140P7T30R)                           0.02       0.15 r
+  U2870/ZN (INV32_140P7T30R)                              0.01       0.16 f
+  U2836/ZN (INV12_140P7T30R)                              0.01       0.17 r
+  U2769/Z (BUFV12_140P7T30R)                              0.02       0.19 r
+  U3307/ZN (OAI22V1_140P7T30R)                            0.02       0.20 f
+  U3107/ZN (NOR2V2_140P7T30R)                             0.02       0.22 r
+  U3134/ZN (OAI12V2_140P7T30R)                            0.01       0.24 f
+  U2832/ZN (AOI12V2_140P7T30R)                            0.02       0.26 r
+  U3313/ZN (OAI12V4_140P7T30R)                            0.02       0.27 f
+  U2917/ZN (AOI12V4_140P7T30R)                            0.02       0.29 r
+  U2831/ZN (OAI12V4_140P7T30R)                            0.01       0.30 f
+  U2830/ZN (AOI12V6_140P7T30R)                            0.01       0.32 r
+  U2787/ZN (OAI12V4_140P7T30R)                            0.01       0.33 f
+  U2829/ZN (AOI12V6_140P7T30R)                            0.02       0.35 r
+  U3365/ZN (OAI12V8_140P7T30R)                            0.01       0.36 f
+  U2895/ZN (AOI12V8_140P7T30R)                            0.01       0.37 r
+  U2894/ZN (OAI12V8_140P7T30R)                            0.01       0.39 f
+  U2897/ZN (AOI12V8_140P7T30R)                            0.01       0.40 r
+  U2896/ZN (OAI12V8_140P7T30R)                            0.01       0.41 f
+  U2899/ZN (AOI12V8_140P7T30R)                            0.01       0.43 r
+  U2898/ZN (OAI12V8_140P7T30R)                            0.01       0.44 f
+  U2901/ZN (AOI12V8_140P7T30R)                            0.01       0.45 r
+  U2900/ZN (OAI12V8_140P7T30R)                            0.01       0.46 f
+  U2923/ZN (AOI12V4_140P7T30R)                            0.02       0.48 r
+  U2865/ZN (OAI12V4_140P7T30R)                            0.01       0.49 f
+  U3522/S (AD1V4_140P7T30R)                               0.05       0.54 r
+  U3452/ZN (NOR2V6_140P7T30R)                             0.01       0.55 f
+  U3459/ZN (NAND2V8_140P7T30R)                            0.01       0.56 r
+  U2864/ZN (INV5_140P7T30R)                               0.01       0.56 f
+  U2983/ZN (NAND2XBV2_140P7T30R)                          0.01       0.57 r
+  U2861/ZN (OAI12V2_140P7T30R)                            0.01       0.58 f
+  U2859/ZN (NAND2V2_140P7T30R)                            0.01       0.59 r
+  U2776/ZN (AOI12V2_140P7T30R)                            0.01       0.60 f
+  U2924/ZN (NOR2V2_140P7T30R)                             0.01       0.61 r
+  U3493/ZN (OAI12V2_140P7T30R)                            0.01       0.62 f
+  U3494/Z (AO1B2V2_140P7T30R)                             0.02       0.65 f
+  U2857/ZN (NOR2V4_140P7T30R)                             0.02       0.66 r
+  U2881/Z (CLKXOR2V6_140P7T30R)                           0.02       0.68 r
+  U3536/CO (AD1V4_140P7T30R)                              0.03       0.71 r
+  U3534/CO (AD1V4_140P7T30R)                              0.03       0.73 r
+  U3533/CO (AD1V4_140P7T30R)                              0.03       0.76 r
+  U3531/CO (AD1V4_140P7T30R)                              0.03       0.79 r
+  U2920/ZN (NAND2V2_140P7T30R)                            0.01       0.80 f
+  U2918/ZN (NAND2V2_140P7T30R)                            0.01       0.81 r
+  U2760/ZN (NAND2V2_140P7T30R)                            0.01       0.82 f
+  U2854/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 r
+  U2853/Z (XOR2V4_140P7T30R)                              0.02       0.85 r
+  U2903/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.86 f
+  U2817/ZN (NOR2V4_140P7T30R)                             0.01       0.87 r
+  U3110/Z (OR2V4_140P7T30R)                               0.02       0.89 r
+  U2815/ZN (INV4_140P7T30R)                               0.01       0.89 f
+  U2814/Z (AND2V8_140P7T30R)                              0.02       0.91 f
+  U2937/ZN (INV6_140P7T30R)                               0.01       0.92 r
+  U2757/ZN (OAI112V2_140P7T30R)                           0.01       0.94 f
+  U2809/ZN (AOI12V2_140P7T30R)                            0.02       0.96 r
+  U2841/ZN (OAI112V2_140P7T30R)                           0.02       0.98 f
+  u_sub/y_reg[12]/D (DQV2_140P7T30R)                      0.00       0.98 f
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_sub/y_reg[12]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_add/y_reg[17]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U2996/Z (AND2V2_140P7T30R)                              0.02       0.15 f
+  U3572/ZN (NAND2XBV2_140P7T30R)                          0.02       0.17 f
+  U3573/Z (BUFV12_140P7T30R)                              0.02       0.19 f
+  U3577/Z (XOR2V2_140P7T30R)                              0.03       0.22 f
+  U3586/ZN (NAND2V2_140P7T30R)                            0.01       0.23 r
+  U3587/ZN (OAI12V2_140P7T30R)                            0.01       0.25 f
+  U3588/ZN (AOI12V2_140P7T30R)                            0.02       0.27 r
+  U3601/ZN (OAI12V4_140P7T30R)                            0.02       0.29 f
+  U3608/ZN (AOI12V4_140P7T30R)                            0.02       0.30 r
+  U3145/ZN (OAI12V4_140P7T30R)                            0.02       0.32 f
+  U3619/ZN (AOI12V8_140P7T30R)                            0.01       0.33 r
+  U3625/ZN (OAI12V6_140P7T30R)                            0.01       0.34 f
+  U3632/ZN (AOI12V8_140P7T30R)                            0.01       0.36 r
+  U3638/ZN (OAI12V8_140P7T30R)                            0.01       0.37 f
+  U3645/ZN (AOI12V8_140P7T30R)                            0.01       0.38 r
+  U3651/ZN (OAI12V6_140P7T30R)                            0.01       0.40 f
+  U3658/ZN (AOI12V8_140P7T30R)                            0.01       0.41 r
+  U3664/ZN (OAI12V8_140P7T30R)                            0.01       0.42 f
+  U3671/ZN (AOI12V4_140P7T30R)                            0.02       0.44 r
+  U3677/ZN (OAI12V8_140P7T30R)                            0.01       0.45 f
+  U3684/ZN (AOI12V8_140P7T30R)                            0.01       0.46 r
+  U3690/ZN (OAI12V6_140P7T30R)                            0.01       0.48 f
+  U3697/ZN (AOI12V8_140P7T30R)                            0.01       0.49 r
+  U3703/ZN (OAI12V8_140P7T30R)                            0.01       0.50 f
+  U3710/ZN (AOI12V6_140P7T30R)                            0.01       0.52 r
+  U3716/ZN (OAI12V6_140P7T30R)                            0.01       0.53 f
+  U3721/Z (CLKXOR2V6_140P7T30R)                           0.02       0.55 f
+  U3725/ZN (NOR2V4_140P7T30R)                             0.01       0.56 r
+  U2863/ZN (NAND2V3_140P7T30R)                            0.01       0.57 f
+  U2828/Z (OR2V4_140P7T30R)                               0.02       0.60 f
+  U2826/ZN (OAI12V4_140P7T30R)                            0.01       0.61 r
+  U2824/ZN (NAND2XBV4_140P7T30R)                          0.01       0.62 f
+  U3837/Z (CLKAND2V16_140P7T30R)                          0.02       0.64 f
+  U3840/ZN (INV4_140P7T30R)                               0.01       0.65 r
+  U3844/ZN (NOR2V2_140P7T30R)                             0.01       0.66 f
+  U2982/Z (XOR2V2_140P7T30R)                              0.02       0.68 f
+  U2821/Z (OR2V2_140P7T30R)                               0.02       0.71 f
+  U2856/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.71 r
+  U2820/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.72 f
+  U2783/ZN (NAND2V2_140P7T30R)                            0.01       0.73 r
+  U3849/Z (AND3V6_140P7T30R)                              0.02       0.76 r
+  U2952/ZN (OAI12V4_140P7T30R)                            0.01       0.77 f
+  U3852/CO (AD1V4_140P7T30R)                              0.03       0.80 f
+  U2819/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.81 r
+  U3146/ZN (NAND2XBV4_140P7T30R)                          0.01       0.82 f
+  U2818/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.82 r
+  U2949/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 f
+  U2948/Z (XOR2V2_140P7T30R)                              0.02       0.85 f
+  U2816/ZN (NAND2V2_140P7T30R)                            0.01       0.86 r
+  U3111/ZN (NOR2V4_140P7T30R)                             0.01       0.87 f
+  U2813/ZN (NOR2V4_140P7T30R)                             0.01       0.88 r
+  U2930/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.90 f
+  U2847/ZN (NOR2V8_140P7T30R)                             0.02       0.91 r
+  U3869/ZN (CLKNAND2V12_140P7T30R)                        0.02       0.93 f
+  U3942/ZN (INV6_140P7T30R)                               0.01       0.94 r
+  U2798/ZN (OAI222V2_140P7T30R)                           0.02       0.96 f
+  U3960/ZN (OAI112V2_140P7T30R)                           0.02       0.98 r
+  u_add/y_reg[17]/D (DQV2_140P7T30R)                      0.00       0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_add/y_reg[17]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_add/sml0_reg[11]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_add/y_reg[14]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_add/sml0_reg[11]/CK (DQV2_140P7T30R)                  0.00       0.00 r
+  u_add/sml0_reg[11]/Q (DQV2_140P7T30R)                   0.03       0.03 r
+  U3101/ZN (INV4_140P7T30R)                               0.01       0.04 f
+  U3224/ZN (NOR2V4_140P7T30R)                             0.01       0.05 r
+  U3232/ZN (OAI12V2_140P7T30R)                            0.01       0.06 f
+  U2872/ZN (AOI12V2_140P7T30R)                            0.02       0.08 r
+  U3239/ZN (OAI12V4_140P7T30R)                            0.01       0.10 f
+  U3240/ZN (AOI12V4_140P7T30R)                            0.02       0.12 r
+  U2892/ZN (OAI12V8_140P7T30R)                            0.01       0.13 f
+  U2996/Z (AND2V2_140P7T30R)                              0.02       0.15 f
+  U3572/ZN (NAND2XBV2_140P7T30R)                          0.02       0.17 f
+  U3573/Z (BUFV12_140P7T30R)                              0.02       0.19 f
+  U3577/Z (XOR2V2_140P7T30R)                              0.03       0.22 f
+  U3586/ZN (NAND2V2_140P7T30R)                            0.01       0.23 r
+  U3587/ZN (OAI12V2_140P7T30R)                            0.01       0.25 f
+  U3588/ZN (AOI12V2_140P7T30R)                            0.02       0.27 r
+  U3601/ZN (OAI12V4_140P7T30R)                            0.02       0.29 f
+  U3608/ZN (AOI12V4_140P7T30R)                            0.02       0.30 r
+  U3145/ZN (OAI12V4_140P7T30R)                            0.02       0.32 f
+  U3619/ZN (AOI12V8_140P7T30R)                            0.01       0.33 r
+  U3625/ZN (OAI12V6_140P7T30R)                            0.01       0.34 f
+  U3632/ZN (AOI12V8_140P7T30R)                            0.01       0.36 r
+  U3638/ZN (OAI12V8_140P7T30R)                            0.01       0.37 f
+  U3645/ZN (AOI12V8_140P7T30R)                            0.01       0.38 r
+  U3651/ZN (OAI12V6_140P7T30R)                            0.01       0.40 f
+  U3658/ZN (AOI12V8_140P7T30R)                            0.01       0.41 r
+  U3664/ZN (OAI12V8_140P7T30R)                            0.01       0.42 f
+  U3671/ZN (AOI12V4_140P7T30R)                            0.02       0.44 r
+  U3677/ZN (OAI12V8_140P7T30R)                            0.01       0.45 f
+  U3684/ZN (AOI12V8_140P7T30R)                            0.01       0.46 r
+  U3690/ZN (OAI12V6_140P7T30R)                            0.01       0.48 f
+  U3697/ZN (AOI12V8_140P7T30R)                            0.01       0.49 r
+  U3703/ZN (OAI12V8_140P7T30R)                            0.01       0.50 f
+  U3710/ZN (AOI12V6_140P7T30R)                            0.01       0.52 r
+  U3724/Z (XOR2V2_140P7T30R)                              0.03       0.55 r
+  U2945/ZN (INV2_140P7T30R)                               0.01       0.56 f
+  U3820/Z (AO12V2_140P7T30R)                              0.02       0.58 f
+  U3821/ZN (AOI12V4_140P7T30R)                            0.02       0.60 r
+  U2826/ZN (OAI12V4_140P7T30R)                            0.01       0.61 f
+  U3822/ZN (INV2_140P7T30R)                               0.02       0.63 r
+  U3823/ZN (INV4_140P7T30R)                               0.01       0.64 f
+  U3843/ZN (NAND2V2_140P7T30R)                            0.01       0.65 r
+  U2954/Z (XOR2V2_140P7T30R)                              0.03       0.68 r
+  U3856/CO (AD1V4_140P7T30R)                              0.03       0.71 r
+  U2856/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.72 f
+  U2820/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.73 r
+  U2783/ZN (NAND2V2_140P7T30R)                            0.01       0.74 f
+  U3849/Z (AND3V6_140P7T30R)                              0.02       0.76 f
+  U2952/ZN (OAI12V4_140P7T30R)                            0.01       0.77 r
+  U3852/CO (AD1V4_140P7T30R)                              0.03       0.80 r
+  U2819/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.80 f
+  U3146/ZN (NAND2XBV4_140P7T30R)                          0.01       0.81 r
+  U2818/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.82 f
+  U2949/ZN (CLKNAND2V4_140P7T30R)                         0.01       0.83 r
+  U2948/Z (XOR2V2_140P7T30R)                              0.02       0.85 r
+  U2816/ZN (NAND2V2_140P7T30R)                            0.01       0.86 f
+  U3111/ZN (NOR2V4_140P7T30R)                             0.01       0.87 r
+  U2813/ZN (NOR2V4_140P7T30R)                             0.01       0.88 f
+  U2947/Z (AND2V4_140P7T30R)                              0.02       0.91 f
+  U2808/ZN (INV8_140P7T30R)                               0.01       0.92 r
+  U3062/ZN (OAI112V2_140P7T30R)                           0.01       0.93 f
+  U6821/ZN (AOI112V2_140P7T30R)                           0.03       0.97 r
+  U3061/ZN (OAI12V2_140P7T30R)                            0.02       0.98 f
+  u_add/y_reg[14]/D (DQV2_140P7T30R)                      0.00       0.98 f
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_add/y_reg[14]/CK (DQV2_140P7T30R)                     0.00       1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+ 
+****************************************
+Report : area
+Design : synth_datapath
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 13:48:13 2026
+****************************************
+
+Library(s) Used:
+
+    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic (File: /home/lzl/project/newlpu/asic/dc/db/scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic.db)
+
+Number of ports:                          354
+Number of nets:                          5631
+Number of cells:                         5258
+Number of combinational cells:           4778
+Number of sequential cells:               480
+Number of macros/black boxes:               0
+Number of buf/inv:                        635
+Number of references:                      92
+
+Combinational area:               2237.437989
+Buf/Inv area:                      135.925997
+Noncombinational area:             847.504028
+Macro/Black Box area:                0.000000
+Net Interconnect area:      undefined  (No wire load specified)
+
+Total cell area:                  3084.942016
+Total area:                 undefined
+
+Hierarchical area distribution
+------------------------------
+
+                                  Global cell area          Local cell area
+                                  ------------------  ---------------------------- 
+Hierarchical cell                 Absolute   Percent  Combi-     Noncombi-  Black-
+                                  Total      Total    national   national   boxes   Design
+--------------------------------  ---------  -------  ---------  ---------  ------  ---------
+synth_datapath                    3084.9420    100.0  2237.4380   847.5040  0.0000  synth_datapath
+--------------------------------  ---------  -------  ---------  ---------  ------  ---------
+Total                                                 2237.4380   847.5040  0.0000
+
+ 
+****************************************
+Report : power
+        -analysis_effort low
+Design : synth_datapath
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 13:48:13 2026
+****************************************
+
+
+Library(s) Used:
+
+    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic (File: /home/lzl/project/newlpu/asic/dc/db/scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic.db)
+
+
+Operating Conditions: tt_v0p9_25c   Library: scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+Wire Load Model Mode: top
+
+
+Global Operating Voltage = 0.9  
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1uW
+
+
+  Cell Internal Power  =   2.2419 mW   (86%)
+  Net Switching Power  = 371.0604 uW   (14%)
+                         ---------
+Total Dynamic Power    =   2.6130 mW  (100%)
+
+Cell Leakage Power     =  22.2779 uW
+
+
+                 Internal         Switching           Leakage            Total
+Power Group      Power            Power               Power              Power   (   %    )  Attrs
+--------------------------------------------------------------------------------------------------
+io_pad             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+memory             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+black_box          0.0000            0.0000            0.0000            0.0000  (   0.00%)
+clock_network      0.0000            0.0000            0.0000            0.0000  (   0.00%)
+register           1.8001        4.2217e-02            6.0246            1.8483  (  70.14%)
+sequential         0.0000            0.0000            0.0000            0.0000  (   0.00%)
+combinational      0.4418            0.3288           16.2533            0.7869  (  29.86%)
+--------------------------------------------------------------------------------------------------
+Total              2.2419 mW         0.3711 mW        22.2779 uW         2.6352 mW
+ 
+****************************************
+Report : reference
+Design : synth_datapath
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 13:48:13 2026
+****************************************
+
+Attributes:
+    b - black box (unknown)
+   bo - allows boundary optimization
+    d - dont_touch
+   mo - map_only
+    h - hierarchical
+    n - noncombinational
+    r - removable
+    s - synthetic operator
+    u - contains unmapped logic
+
+Reference          Library       Unit Area   Count    Total Area   Attributes
+-----------------------------------------------------------------------------
+AD1V2_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.568000     168    263.423993  r
+AD1V4_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.764000       9     15.876001  r
+ADH1V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000      77     75.460001  r
+ADH1V4_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.176000       6      7.056000  r
+AND2V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000     114     44.687999  
+AND2V4_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       1      0.490000  
+AND2V6_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.784000       1      0.784000  
+AND2V8_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.882000       1      0.882000  
+AND3V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       4      1.960000  
+AND3V6_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000       1      0.980000  
+AND4V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       2      1.176000  
+AO1B2V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      25     12.250000  
+AO12V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      26     12.740000  
+AO22V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000      22     15.092000  
+AO112V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       4      2.352000  
+AO222V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.882000      12     10.584000  
+AOI12V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000     215     84.279998  
+AOI12V4_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000      17     11.662000  
+AOI12V6_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000       5      4.900000  
+AOI12V8_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.274000      11     14.014001  
+AOI13V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      11      5.390000  
+AOI22BBV2_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       9      6.174000  
+AOI22V1_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000     357    174.930003  
+AOI32V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       6      3.528000  
+AOI112V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      55     26.950001  
+AOI212V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000      38     22.344000  
+AOI222V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.784000     169    132.495997  
+BUFV2_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.294000       5      1.470000  
+BUFV12_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000       3      2.940000  
+BUFV16_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.274000       1      1.274000  
+CLKAND2V16_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.666000       1      1.666000  
+CLKNAND2V4_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      10      4.900000  
+CLKNAND2V12_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.274000       1      1.274000  
+CLKNOR2V3_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       2      0.980000  
+CLKOR2V16_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.666000       1      1.666000  
+CLKXOR2V6_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.470000       3      4.410000  
+DQV2_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.764000     474    836.136028  n
+DQV4_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.862000       4      7.448000  n
+DQV6_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.960000       2      3.920000  n
+INV2_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.196000     583    114.267997  
+INV4_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.294000      32      9.408000  
+INV5_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000       1      0.392000  
+INV6_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000       3      1.176000  
+INV8_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       3      1.470000  
+INV10_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       2      1.176000  
+INV12_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       1      0.686000  
+INV32_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.666000       1      1.666000  
+MUX2NV2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.784000       2      1.568000  
+NAND2V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.294000     600    176.400000  
+NAND2V3_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       2      0.980000  
+NAND2V6_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       1      0.686000  
+NAND2V8_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.882000       1      0.882000  
+NAND2XBV2_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000      45     17.640000  
+NAND2XBV4_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       4      2.352000  
+NAND3V1P5_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000       2      0.784000  
+NAND3V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000      33     12.936000  
+NAND4V1P5_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      16      7.840000  
+NAND4XXBBV2_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       3      1.764000  
+NOR2V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.294000     544    159.936000  
+NOR2V4_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      13      6.370000  
+NOR2V6_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       2      1.372000  
+NOR2V8_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.882000       1      0.882000  
+NOR2XBV2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000      30     11.760000  
+NOR2XBV4_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       1      0.588000  
+NOR3V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000      26     10.192000  
+NOR4V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      27     13.230000  
+OA1B2V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       3      1.470000  
+OA12V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      33     16.170000  
+OA12V4_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       1      0.588000  
+OA13V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       1      0.588000  
+OA22V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       8      5.488000  
+OA112V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000      13      7.644000  
+OAI12V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000     406    159.151996  
+OAI12V4_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000      13      8.918000  
+OAI12V6_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000       5      4.900000  
+OAI12V8_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.274000      12     15.288001  
+OAI13V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000      15      7.350000  
+OAI21BV2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       7      4.116000  
+OAI22BBV2_140P7T30R
+                   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       7      4.802000  
+OAI22V1_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000     230    112.700002  
+OAI32V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000       2      1.176000  
+OAI33V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.686000       1      0.686000  
+OAI112V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000     144     70.560001  
+OAI212V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000      10      5.880000  
+OAI222V2_140P7T30R scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.784000       6      4.704000  
+OR2V2_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000      71     27.831999  
+OR2V4_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.490000       4      1.960000  
+PULL0_140P7T30R    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.196000       1      0.196000  
+XNOR2V2_140P7T30R  scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000      93     54.684000  
+XOR2V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.588000     318    186.984000  
+XOR2V4_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.980000       1      0.980000  
+XOR3V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.176000       1      1.176000  
+-----------------------------------------------------------------------------
+Total 92 references                                  3084.942016
+1

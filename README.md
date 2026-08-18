@@ -81,8 +81,9 @@ plans/         各节点计划与评审记录
   `/home/public/PDK/SMIC28/macros_out`；std cell 树根 `SMIC28_STD_DIR` 默认
   `/home/public/PDK/SMIC28/STDcell/SCC28NHKCP_HDC30P140_RVT_V0p2`；宏源包
   `SMIC28_PKG_ROOT` 默认 `/home/public/PDK/SMIC28/SRAM_Ccompiler_ARM20240823`，
-  兼容 shim 由 skill `smic28-sram-compiler` 提供），再
-  `DC_TECH=smic28 bash asic/dc/run_dc.sh <corner> synth_top`。商业 PDK 产物
+  兼容 shim 由 skill `smic28-sram-compiler` 提供），再用
+  `DC_TECH=smic28 bash asic/dc/run_dc.sh <corner> <synth_top|synth_datapath|mac_bf16>`；
+  三种设计均使用独立 SMIC28 报告标签，不覆盖 sky130 历史结果。商业 PDK 产物
   （.lib/.lef/.gds2/.cdl/.clf）不入公开仓库，见 `docs/p10/asic-report.md` §10.7。
 - VCS：必须在 Synopsys CentOS 7 兼容命名空间（snps-centos7，glibc 2.17）下编译运行；
   `make -C asic/vcs`（见报告 §11）。

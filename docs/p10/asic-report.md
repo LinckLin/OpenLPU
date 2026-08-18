@@ -3,16 +3,18 @@
 > 状态：M9 验收交付。Yosys 0.44 + SkyWater 130 nm（sky130_fd_sc_hd）逻辑真综合；
 > OpenSTA 多 corner STA；SRAM 宏按公开密度上下界估算并单列占比。
 > 冻结快照：`rtl/ref/asicsnap/`（开工时打点；rtl/ 只读，P8 未改 rtl/ 源）。
+> D18 更新（2026-08-19）：代表数据通路与 BF16 MAC 已用 SMIC28 HDC30P140 RVT
+> 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；全系统控制平面与物理 signoff 另行列示。
 
 ## 0. 结论速览
 
 | 项 | 结果 |
 |---|---|
 | elaboration | ✅ 通过（Verilator 4.038 原 RTL lint + Yosys 0.44 层级检查，见 §1） |
-| 逻辑综合 | ✅ 通过（8 项 FP 基元 → sky130 门级网表，见 §2） |
-| 时序收敛结论 | ⚠️ **1 GHz 未收敛**；M9 直接组合映射 Fmax ≈ 59 MHz（tt）。**P10b 流水化后 Fmax(tt) ≈ 129 MHz**（OpenSTA/Yosys 口径，add/sub 7.77 ns 限制）；**DC compile_ultra 口径：tt 331 MHz / ss 169 MHz**（基元级，§10——STA 引擎交叉验证 <0.1% 一致，差距归综合工具）；200 MHz 目标在 Yosys 口径未达、DC 口径达成（双口径如实并列） |
-| 面积 | M9 组合映射口径（实测）：FP ALU 0.0331 / BF16 MAC 0.0273 / INT8 MAC 0.0042 mm²；P10b 流水化口径（实测，run_synth.sh）：ALU top 0.0609 / mac_bf16 ≈0.0349 / mac_int8 ≈0.0053 mm²；SRAM 100.7–268.4 mm²（估算） |
-| token/s | 1 GHz 口径 960/675/469；P10b 流水化口径（129 MHz）≈ 124/87/60；DC 口径（331 MHz）≈ 318/223/155（见 §6/§9/§10） |
+| 逻辑综合 | ✅ 通过（8 项 FP 基元 → legacy sky130 与当前 SMIC28 门级网表，见 §2/§10.4） |
+| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前 SMIC28 控制平面 tt/ss 为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath` 与 `mac_bf16` 的 SMIC28 DC tt/ss 均在 1 ns 探针下 `MET`，arrival 0.98–0.99 ns（§10.4）；这是 pre-layout 局部闭合，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
+| 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；legacy sky130 P10b：ALU top 0.0609 / mac_bf16 ≈0.0349 / mac_int8 ≈0.0053 mm²；SRAM 100.7–268.4 mm²为旧公开密度估算 |
+| token/s | 冻结 1 GHz 口径 960/675/469；SMIC28 代表数据通路已支持 1 GHz 综合探针，但系统频率仍受控制平面与后续物理实现限制，暂不改写端到端 token/s |
 
 
 > **DC/VCS 补充（§10/§11）**：Synopsys DC O-2018.06-SP1 compile_ultra（基元级）与
@@ -286,8 +288,9 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 ## 10. DC 综合流程（Design Compiler O-2018.06-SP1，P10 §10）
 
 > 状态：DcSyn 交付；O6 全设计扩展。Synopsys Design Compiler（DC Ultra）
-> O-2018.06-SP1 + sky130 5-corner liberty。代表数据通路（synth_datapath / mac_bf16）
-> 跑通 compile_ultra 并出 tt/ss 两 corner 时序/漏电/面积；与 OpenSTA 同口径交叉验证；
+> O-2018.06-SP1 + sky130 5-corner liberty / SMIC28 HDC30P140 RVT tt/ss 库。代表数据通路
+> （synth_datapath / mac_bf16）在双工艺下跑通 compile_ultra 并出 tt/ss 时序/漏电/面积；
+> legacy sky130 结果与 OpenSTA 同口径交叉验证；
 > **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
 > 控制平面真综合，§10.5）。
 
@@ -345,7 +348,7 @@ Fmax=1/arrival，流水化 synth_datapath）——§9.3 只报了 tt，本节点
 | tt_025C_1v80 | 7.7686 ns（u_add） | **128.7 MHz** |
 | ss_100C_1v60 | 15.3851 ns（u_mul） | **65.0 MHz** |
 
-DC compile_ultra 结果（同口径 1 ns 探针时钟，`report_timing` data arrival）：
+legacy sky130 DC compile_ultra 结果（同口径 1 ns 探针时钟，`report_timing` data arrival）：
 
 | design | corner | 关键路径 | Fmax | 面积 (µm² / mm²) | 漏电 |
 |---|---|---|---|---|---|
@@ -354,7 +357,24 @@ DC compile_ultra 结果（同口径 1 ns 探针时钟，`report_timing` data arr
 | mac_bf16 | tt | 3.03 ns | **330 MHz** | 36029.6 / 0.0360 | 16.33 nW |
 | mac_bf16 | ss | 5.64 ns | **177 MHz** | 38670.7 / 0.0387 | 23.76 µW |
 
-**逐项对比（DC vs OpenSTA/Yosys）**：
+**D18 SMIC28 数据通路重立（Track 2.2a）**：`dc_flow.tcl` 现与全顶层流程共用
+`DC_TECH=sky130|smic28` 选择和 corner 映射；SMIC28 报告使用独立文件名，不覆盖 legacy
+结果。四次 `compile_ultra` 均在 1 ns 约束下 `MET`：
+
+| design | corner | 最差路径 | arrival / 1 ns 结果 | 面积 (µm² / mm²) | 漏电 |
+|---|---|---|---|---|---|
+| synth_datapath | tt | `u_add/sml0_reg[11]→u_sub/y_reg[8]` | 0.98 ns / **MET（≥1 GHz 探针）** | 3084.9 / 0.003085 | 22.28 µW |
+| synth_datapath | ss | `i_in[0]→u_i2f/e0_reg[4]` | 0.98 ns / **MET（≥1 GHz 探针）** | 3236.7 / 0.003237 | 259.67 µW |
+| mac_bf16 | tt | `u_mul/ma0_reg[17]→u_mul/prod_hi_reg[24]` | 0.99 ns / **MET（≥1 GHz 探针）** | 1905.6 / 0.001906 | 14.00 µW |
+| mac_bf16 | ss | `u_add/sml0_reg[21]→u_add/y_reg[20]` | 0.98 ns / **MET（≥1 GHz 探针）** | 1961.4 / 0.001961 | 157.91 µW |
+
+相对 legacy sky130 DC，同 RTL 的时序提升下界为 datapath tt/ss **≥3.08×/≥6.02×**、
+mac_bf16 tt/ss **≥3.06×/≥5.76×**；面积分别缩小约 20.0×/19.2× 与 18.9×/19.7×。
+这里不把 `1/0.98 ns` 写成极限 Fmax：compile_ultra 是按 1 ns 目标驱动优化，报告只证明
+该约束在 ideal-clock、无提取互连寄生的综合口径闭合。ss 几乎无裕量，CTS/布线后是否仍
+满足 1 GHz 必须由物理实现回答。
+
+**逐项对比（legacy sky130 DC vs OpenSTA/Yosys）**：
 
 | 量 | DC compile_ultra | Yosys abc + OpenSTA | 差异 |
 |---|---|---|---|
@@ -371,9 +391,19 @@ DC compile_ultra 结果（同口径 1 ns 探针时钟，`report_timing` data arr
 驱动。面积同量级（映射逻辑相同），仅时序结构更优。
 
 **report_power 口径**：DC 只报**漏电 + 面积**（表内已列）；动态功耗沿用 §5 活动因子
-估算（DC report_power 的 40.4 mW 动态值基于缺省翻转率，不采用；VCD 回注为后续）。
-漏电 ss(100 °C) 较 tt(25 °C) 高 ~1300×，与 liberty 一致（NAND2 cell_leakage 0.0021 nW
-→ 2.27 nW）。
+估算（DC report_power 的动态值基于缺省翻转率，不采用；VCD 回注为后续）。
+legacy sky130 漏电 ss(100 °C) 较 tt(25 °C) 高 ~1300×，与其 liberty 一致（NAND2
+cell_leakage 0.0021 nW → 2.27 nW）；SMIC28 datapath/mac 的 ss/tt 漏电约 11.7×/11.3×，
+跨工艺绝对漏电不可直接按面积缩放。
+
+SMIC28 数据通路报告复现命令：
+
+```bash
+DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_datapath
+DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 synth_datapath
+DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 mac_bf16
+DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 mac_bf16
+```
 
 ### 10.5 全设计 synth_top（步骤 5，全设计 elaborate + compile_ultra 跑通）
 
@@ -505,8 +535,8 @@ area 272559.7→268726.7 μm²（0.273→0.269 mm²，**-1.41%**）。低努力�
 
 以上仍是 1 ns、ideal-clock 的综合探针，不是布局后 signoff：报告对 B-feed `clk` 的 30804
 loads 使用 high-fanout=1000 延迟估算，且无 CTS/提取互连寄生。下一步须补 CTS/布局后 STA。
-数据通路基元（synth_datapath 331 MHz tt / mac_bf16 330 MHz，§10.4）
-仍为 sky130 口径（引擎黑盒、未随控制平面重立，口径如实单列）。
+代表数据通路基元已经完成 SMIC28 重立并闭合 1 GHz 综合探针（§10.4）；全顶层中的
+matrix/vector engine 仍为宏黑盒，其内部 RAM 宏实例化与物理接口时序仍待闭合。
 
 > **pre-pipeline 收敛耗时（如实）**：未流水化的 `rope_sincos` 组合锥（28–31 op 级）使
 > compile_ultra 收敛极慢——首轮 tt/ss 在 ~7 h 被外部终止、重跑 tt/ss 各 ~7.8 h 才完成
