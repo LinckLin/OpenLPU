@@ -21,8 +21,8 @@
 //   scale record:        scale_base -> [s_q (2B @ +0)][s_v (2B @ +2)]  (HBM)
 //   staging:             sram_base (read 256B BF16 source)
 //
-// NOTE: s_q/s_v clamp min to 1e-6 in the executor (degenerate all-zero
-// activations); for unit-norm K / normal V this never binds, so RTL omits it.
+// s_q/s_v clamp to float32 1e-6 before BF16 rounding, matching the executor for
+// degenerate all-zero or very small activations.
 // ============================================================================
 `ifndef KV_QUANTDEQUANT_SV
 `define KV_QUANTDEQUANT_SV
@@ -73,12 +73,43 @@ module kv_quantdequant #(
     end
   endfunction
 
+  function automatic logic [31:0] quant_clip(
+    input logic [31:0] f,
+    input logic        is_v
+  );
+    logic [31:0] q;
+    q = quant_rne(f);
+    if (is_v) begin
+      if ($signed(q) < -32'sd7) q = 32'hFFFFFFF9;
+      if ($signed(q) >  32'sd7) q = 32'd7;
+    end else begin
+      if ($signed(q) < -32'sd127) q = 32'hFFFFFF81;
+      if ($signed(q) >  32'sd127) q = 32'd127;
+    end
+    quant_clip = q;
+  endfunction
+
+  // This is the seed from fp32_recip.  S_INV preserves the original iteration
+  // order, but registers each mul/sub so no Newton-Raphson cone spans a full
+  // clock cycle.
+  function automatic logic [31:0] recip_seed(input logic [31:0] b);
+    logic [7:0]  eb;
+    logic [22:0] mb;
+    eb = b[30:23]; mb = b[22:0];
+    if (eb == 8'hFF || eb == 0)
+      recip_seed = b;
+    else
+      recip_seed = {b[31], 8'd253 - eb, 23'h7FFFFF - (mb >> 1)};
+  endfunction
+
   localparam logic [2:0]
     S_IDLE   = 3'd0,
     S_LD     = 3'd1,   // read BF16 source, track max (quant)
     S_SCL    = 3'd2,   // write scale (2B)
-    S_WR     = 3'd3,   // quantize -> data bytes
-    S_DONE   = 3'd4;
+    S_INV    = 3'd3,   // reciprocal, 4 iterations x (mul/sub/mul)
+    S_WR     = 3'd4,   // pipelined quantize -> data bytes
+    S_DRAIN  = 3'd5,   // retire the final two pipeline entries
+    S_DONE   = 3'd6;
 
   logic [2:0]  state;
   logic [7:0]  idx;             // element/channel index 0..127
@@ -87,6 +118,18 @@ module kv_quantdequant #(
   logic [31:0] amax;            // running max magnitude (fp32)
   logic [15:0] s_bits;          // s_q or s_v (BF16)
   logic [3:0]  lo_nib;          // quant V: pending low nibble
+  logic [31:0] scale_f;         // BF16-exact scale in fp32 form
+  logic [31:0] inv_scale;       // reciprocal after four NR iterations
+  logic [31:0] recip_r;         // NR iteration input carried to final mul
+  logic [31:0] recip_prod;      // scale_f * recip_r
+  logic [31:0] recip_err;       // 2.0 - recip_prod
+  logic [1:0]  inv_iter;        // Newton-Raphson iteration 0..3
+  logic [31:0] qmul_pipe;       // qbuf[idx] * inv_scale
+  logic [7:0]  qmul_idx;
+  logic        qmul_valid;
+  logic [7:0]  qout_data;       // clipped two's-complement integer
+  logic [7:0]  qout_idx;
+  logic        qout_valid;
 
   // ---- combinational read address -------------------------------------
   always_comb begin
@@ -102,32 +145,24 @@ module kv_quantdequant #(
     wr_en = 1'b0; wr_sel = 1'b0; wr_addr = 40'b0; wr_data = 8'b0;
     case (state)
       S_SCL: begin
-        logic [15:0] s_tmp;
-        // s_bits is registered at sub=0; the combinational write must not read
-        // the stale value, so recompute the scale here (amax/kv stable in S_SCL).
-        s_tmp = fp32_to_bf16(fp32_div(amax, i32_to_f32(kv ? 32'd7 : 32'd127)));
-        wr_en = 1'b1; wr_sel = 1'b1; wr_addr = scale_base + (kv ? 2 : 0) + sub[0];
-        wr_data = sub[0] ? s_tmp[15:8] : s_tmp[7:0];
+        // sub=0 computes s_bits.  Write the registered bytes at sub=1/2 so
+        // the scale divider is not part of an output path.
+        if (sub == 3'd1 || sub == 3'd2) begin
+          wr_en = 1'b1; wr_sel = 1'b1;
+          wr_addr = scale_base + (kv ? 2 : 0) + (sub - 3'd1);
+          wr_data = (sub == 3'd1) ? s_bits[7:0] : s_bits[15:8];
+        end
       end
-      S_WR: begin
-        logic [31:0] qv;
-        qv = quant_rne(fp32_div(qbuf[idx], bf16_to_fp32(s_bits)));
-        if (!kv) begin
-          if ($signed(qv) < -32'sd127) qv = 32'shFFFFFF81;
-          if ($signed(qv) >  32'sd127) qv = 32'sd127;
-          wr_en = 1'b1; wr_sel = 1'b1; wr_addr = data_base + idx;
-          wr_data = qv[7:0];
-        end else begin
-          logic [31:0] qve;
-          if ($signed(qv) < -7) qv = 32'shFFFFFFF9;
-          if ($signed(qv) >  7) qv = 32'sd7;
-          // even element -> low nibble; odd -> combine with the freshly
-          // recomputed (and clipped) even nibble (avoid the stale lo_nib reg).
-          qve = (idx[0]) ? quant_rne(fp32_div(qbuf[idx-1], bf16_to_fp32(s_bits))) : 32'b0;
-          if ($signed(qve) < -7) qve = 32'shFFFFFFF9;
-          if ($signed(qve) >  7) qve = 32'sd7;
-          wr_en = 1'b1; wr_sel = 1'b1; wr_addr = data_base + (idx >> 1);
-          wr_data = idx[0] ? {qv[3:0], qve[3:0]} : qv[3:0];
+      S_WR, S_DRAIN: begin
+        if (qout_valid) begin
+          wr_en = 1'b1; wr_sel = 1'b1;
+          if (!kv) begin
+            wr_addr = data_base + qout_idx;
+            wr_data = qout_data;
+          end else begin
+            wr_addr = data_base + (qout_idx >> 1);
+            wr_data = qout_idx[0] ? {qout_data[3:0], lo_nib} : qout_data[3:0];
+          end
         end
       end
       default: begin end
@@ -139,12 +174,17 @@ module kv_quantdequant #(
     if (!rst_n) begin
       state <= S_IDLE; idx <= 8'b0; sub <= 3'b0; accb <= 8'b0;
       amax <= 32'b0; s_bits <= 16'b0; lo_nib <= 4'b0; done <= 1'b0;
+      scale_f <= 32'b0; inv_scale <= 32'b0; recip_r <= 32'b0;
+      recip_prod <= 32'b0; recip_err <= 32'b0; inv_iter <= 2'b0;
+      qmul_pipe <= 32'b0; qmul_idx <= 8'b0; qmul_valid <= 1'b0;
+      qout_data <= 8'b0; qout_idx <= 8'b0; qout_valid <= 1'b0;
     end else begin
       done <= 1'b0;
       case (state)
         S_IDLE: begin
           if (start) begin
             idx <= 8'b0; sub <= 3'b0; amax <= 32'b0; accb <= 8'b0; lo_nib <= 4'b0;
+            qmul_valid <= 1'b0; qout_valid <= 1'b0;
             state <= S_LD;
           end
         end
@@ -167,22 +207,84 @@ module kv_quantdequant #(
 
         S_SCL: begin
           if (sub == 3'd0) begin
-            s_bits <= fp32_to_bf16(fp32_div(amax,
-              i32_to_f32(kv ? 32'd7 : 32'd127)));
+            logic [31:0] sf;
+            sf = fp32_div(amax, i32_to_f32(kv ? 32'd7 : 32'd127));
+            if (sf < 32'h358637BD) sf = 32'h358637BD;  // float32(1e-6)
+            s_bits <= fp32_to_bf16(sf);
             sub <= 3'd1;
+          end else if (sub == 3'd1) begin
+            logic [31:0] sf;
+            sf = bf16_to_fp32(s_bits);
+            scale_f <= sf;
+            inv_scale <= recip_seed(sf);
+            sub <= 3'd2;
           end else begin
-            sub <= 3'd0; idx <= 8'b0; state <= S_WR;
+            sub <= 3'd0; inv_iter <= 2'b0; state <= S_INV;
+          end
+        end
+
+        // One soft-float operation per register slice.  Four iterations match
+        // fp32_recip exactly: r <- r * (2 - scale_f * r).
+        S_INV: begin
+          if (scale_f[30:23] == 8'b0 || scale_f[30:23] == 8'hFF) begin
+            // fp32_recip returns zero/Inf/NaN inputs without NR iterations.
+            sub <= 3'd0;
+            if (inv_iter == 2'd3) begin
+              idx <= 8'b0; qmul_valid <= 1'b0; qout_valid <= 1'b0;
+              state <= S_WR;
+            end else begin
+              inv_iter <= inv_iter + 2'd1;
+            end
+          end else if (sub == 3'd0) begin
+            recip_r <= inv_scale;
+            recip_prod <= fp32_mul(scale_f, inv_scale);
+            sub <= 3'd1;
+          end else if (sub == 3'd1) begin
+            recip_err <= fp32_sub(F_TWO, recip_prod);
+            sub <= 3'd2;
+          end else begin
+            inv_scale <= fp32_mul(recip_r, recip_err);
+            sub <= 3'd0;
+            if (inv_iter == 2'd3) begin
+              idx <= 8'b0; qmul_valid <= 1'b0; qout_valid <= 1'b0;
+              state <= S_WR;
+            end else begin
+              inv_iter <= inv_iter + 2'd1;
+            end
           end
         end
 
         S_WR: begin
-          if (idx[0] && kv) begin
-            logic [31:0] qvprev;
-            qvprev = quant_rne(fp32_div(qbuf[idx-1], bf16_to_fp32(s_bits)));
-            lo_nib <= qvprev[3:0];
+          logic [31:0] qv;
+          if (qout_valid && kv && !qout_idx[0]) begin
+            lo_nib <= qout_data[3:0];
           end
-          if (idx == 127) begin state <= S_DONE; done <= 1'b1; end
+          qv = quant_clip(qmul_pipe, kv);
+          qout_data <= qv[7:0];
+          qout_idx <= qmul_idx;
+          qout_valid <= qmul_valid;
+          qmul_pipe <= fp32_mul(qbuf[idx], inv_scale);
+          qmul_idx <= idx;
+          qmul_valid <= 1'b1;
+          if (idx == 127) state <= S_DRAIN;
           else idx <= idx + 8'd1;
+        end
+
+        S_DRAIN: begin
+          logic [31:0] qv;
+          if (qout_valid && kv && !qout_idx[0]) begin
+            lo_nib <= qout_data[3:0];
+          end
+          qv = quant_clip(qmul_pipe, kv);
+          qout_data <= qv[7:0];
+          qout_idx <= qmul_idx;
+          qout_valid <= qmul_valid;
+          qmul_valid <= 1'b0;
+          if (qout_valid && qout_idx == 8'd127) begin
+            qout_valid <= 1'b0;
+            done <= 1'b1;
+            state <= S_DONE;
+          end
         end
 
         S_DONE: state <= S_IDLE;

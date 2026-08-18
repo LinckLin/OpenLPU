@@ -79,18 +79,24 @@ BF16 舍入忠实）。
   1. BF16 读回须 `bf16_to_fp32`（此前零扩展位型被当 denormal，`amax`/`kn_f` 全错 → 见 §6 评审项 3）；
   2. `f32_to_i32_rne` 对 `|x|∈[0.5,1.0)` 返回 0（冻结 softfloat 的 RNE 漏洞），本模块以局部
      `quant_rne` 修正（不改冻结 softfloat，默认回归契约）。
+  3. scale 在 BF16 舍入前按 executor 契约 clamp 到 float32 `1e-6`，全零 K/V 不再生成零 scale。
+  4. Track 2.1 将四轮 Newton-Raphson 倒数按 `mul/sub/mul` 逐操作寄存，并将 element multiply
+     与 RNE/clip 分级；保持原 softfloat 运算次序和一元素/周期稳态吞吐。SMIC28 全顶层
+     data arrival：tt **4.59→1.57 ns**（217.9→636.9 MHz），ss **6.08→2.12 ns**
+     （164.5→471.7 MHz）；均为 1 ns ideal-clock 综合探针，双角 top-10 均无量化器路径。
 - **`rtl/command_processor.sv`**：KV 指令解码 dtype → 新增 `S_KVQD` 状态，逐 (tok, phase) 驱动
   kvqd 模块；BF16 张量走既有 DMA 回退；`KV.LOAD sel` 全组合（0=K/1=V/2=both）正确路由。
 - **`rtl/qcore_pkg.sv`**：新增 `AR_KV_SCALE_BASE=62`、`C_KVNORM_BASE=29` 常量。
-- **`rtl/tb/run_cosim_bprime.py`**（新）：专用 co-sim 两用例（APPEND+LOAD 8 heads、STORE_BLOCK+LOAD
-  4 token），判据 trace+total 一致 + BF16 输出 ≤1 ULP。
+- **`rtl/tb/run_cosim_bprime.py`**：专用 B-feed co-sim 三用例（sink / rolling window / PF），
+  覆盖 quantize-on-write 后的 INT8-K 旋转与 INT4-V 去量化，判据 trace+total 一致 + BF16 输出 ≤1 ULP。
 
 ## 5. 验证
 
 | 层 | 用例 | 结果 |
 |---|---|---|
 | qsim 功能级 | `qsim/test_bprime_kv.py`（K 折叠/V INT4 dequant vs fp64 双轨 `<1e-6`，BF16 ≤1 ULP，roundtrip，scale 布局，BF16 默认不变） | **5/5 全通** |
-| RTL co-sim | `rtl/tb/run_cosim_bprime.py`（APPEND_LOAD / STORE_BLOCK_LOAD） | **ALL PASS，0 ULP，trace/cycles 一致** |
+| RTL co-sim | `rtl/tb/run_cosim_bprime.py`（sink / rolling window / PF） | **3/3 PASS，0 ULP，trace/cycles 一致** |
+| RTL quant 定向 | 随机 + 全零 K/V，比较 INT8-K 128 B + INT4-V 64 B + scales 4 B | **两例 196 B 均与 executor 字节级一致** |
 | qsim 回归 | `pytest qsim/test_isa_fields.py qsim/test_vector_kv.py qsim/test_int4.py` | **47 passed** |
 | timing | `qsim/timing_p6.py`（ctx 4096/8192 双 PASS） | **PASS** |
 | 数值复跑 | `qrun/fold_verify.py --k-bits 8`（ΔPPL + 交叉 + ceiling） | 复跑（见 §0） |

@@ -474,19 +474,39 @@ DC/LC O-2018.06-SP1 读取（`read_db` OK，无需 .lib 重转，兜底路径保
 | 口径 | corner | 关键路径 | data arrival | Fmax |
 |---|---|---|---|---|
 | legacy（**跨工艺可达性口径：sky130 逻辑 + SMIC28 宏**） | tt | `rope_sincos` 锥（`pos_base_reg[2]→row_reg[40][19]`） | 68.11 ns | 14.7 MHz |
-| SMIC28 pre-pipeline（当前 RTL，未流水化） | tt | `u_cp/u_kvqd/s_bits_reg[2]→hbm_wdata[2]`（kv_quantdequant；rope 锥 8.56 ns 紧随） | **8.59 ns** | **116.4 MHz** |
-| SMIC28 pre-pipeline（当前 RTL，未流水化） | ss | `u_cp/u_kvqd/s_bits_reg[5]→hbm_wdata[2]`（rope 锥 11.43 ns 紧随） | **11.49 ns** | **87.0 MHz** |
-| **SMIC28 post-pipeline（锥流水化 14 级，D18 主降路径）** | tt | `u_cp/u_kvqd/s_bits_reg[5]→hbm_wdata[0]`（kv_quantdequant 量化器） | **4.59 ns** | **217.9 MHz** |
-| **SMIC28 post-pipeline（锥流水化 14 级，D18 主降路径）** | ss | `u_cp/u_kvqd/s_bits_reg[1]→hbm_wdata[0]` | **6.08 ns** | **164.5 MHz** |
+| SMIC28 pre-pipeline（未流水化对照） | tt | `u_cp/u_kvqd/s_bits_reg[2]→hbm_wdata[2]`（kv_quantdequant；rope 锥 8.56 ns 紧随） | **8.59 ns** | **116.4 MHz** |
+| SMIC28 pre-pipeline（未流水化对照） | ss | `u_cp/u_kvqd/s_bits_reg[5]→hbm_wdata[2]`（rope 锥 11.43 ns 紧随） | **11.49 ns** | **87.0 MHz** |
+| **SMIC28 rope post-pipeline（锥流水化 14 级）** | tt | `u_cp/u_kvqd/s_bits_reg[5]→hbm_wdata[0]`（kv_quantdequant 量化器） | **4.59 ns** | **217.9 MHz** |
+| **SMIC28 rope post-pipeline（锥流水化 14 级）** | ss | `u_cp/u_kvqd/s_bits_reg[1]→hbm_wdata[0]` | **6.08 ns** | **164.5 MHz** |
+| **SMIC28 quant-pipeline（当前 RTL，Track 2.1）** | tt | `u_cp/len_reg[3]→hbm_addr[33]`（B-feed reg→reg 1.55 ns 紧随；top-10 无 kv_quantdequant） | **1.57 ns** | **636.9 MHz** |
+| **SMIC28 quant-pipeline（当前 RTL，Track 2.1）** | ss | `u_cp/u_dma/row_reg[2]→hbm_addr[39]`（另 2 条 HBM 地址路径同为 2.12 ns；7 条 B-feed reg→reg 为 2.09 ns；top-10 无 kv_quantdequant） | **2.12 ns** | **471.7 MHz** |
 
 **结论（如实）**：pre-pipeline 关键路径 = kv_quantdequant 量化器（8.59 ns tt / 11.49 ns
-ss），`rope_sincos` 锥（28 nm 口径 8.56 / 11.43 ns，≈ sky130 68.11 ns 的 1/8）几乎并列——
-两者在 28 nm 都收敛到 ~8.6 / ~11.4 ns。锥流水化（14 级）把 rope 锥切出关键路径后，
-compile_ultra 得以全力优化剩余控制平面逻辑，kv_quantdequant 路径降到 4.59 / 6.08 ns
-（Fmax **tt 217.9 / ss 164.5 MHz**，pre→post ≈1.87× / 1.89×）。控制平面面积 0.272 mm²
-（tt；sky130 同口径 1.000 mm²，28 nm 密度 ≈3.7×；引擎/SRAM 按宏黑盒）。数据通路基元
-（synth_datapath 331 MHz tt / mac_bf16 330 MHz，§10.4）仍为 sky130 口径（引擎黑盒、未随
-控制平面重立，口径如实单列）。
+ss），`rope_sincos` 锥（28 nm 口径 8.56 / 11.43 ns，≈ sky130 68.11 ns 的 1/8）几乎并列。
+14 级锥流水化先把 rope 锥切出关键路径，将控制平面推进到 4.59 / 6.08 ns（Fmax **tt
+217.9 / ss 164.5 MHz**）。Track 2.1 随后将量化器的四轮 Newton-Raphson 倒数按
+`mul/sub/mul` 逐操作寄存，并将 element multiply 与 RNE/clip 分级；scale 写回也先寄存。
+INT8-K/INT4-V 仍保持一元素/周期的稳态吞吐与原有 softfloat 运算顺序。
+
+当前 RTL 的完整 tt/ss `compile_ultra` 报告分别为
+`asic/dc/reports/synth_top_smic28_tt_025C_1v80_kvqd_pipe.rpt` 与
+`asic/dc/reports/synth_top_smic28_ss_100C_1v60_kvqd_pipe_ss.rpt`。tt 最差 data arrival
+**1.57 ns**（**636.9 MHz**），相对上一 tt 基线 4.59 ns / 217.9 MHz 提升 **2.92×**；
+ss 最差 data arrival **2.12 ns**（**471.7 MHz**），相对上一 ss 基线 6.08 ns / 164.5 MHz
+提升 **2.87×**。tt 达到 Track 2.1 的 ≥300 MHz 目标，ss 探针值也高于 300 MHz。tt top-10 为 6 条
+`len_reg→hbm_addr`（1.57 ns）与 4 条 B-feed reg→reg（1.55 ns）；ss top-10 为 3 条
+DMA/长度寄存器到 `hbm_addr`（2.12 ns）与 7 条 B-feed reg→reg（2.09 ns）。量化器在双角
+均完全退出 top-10。
+
+tt 总 cell area 271824.6→266379.2 μm²（0.272→0.266 mm²，**-2.00%**）；ss 总 cell
+area 272559.7→268726.7 μm²（0.273→0.269 mm²，**-1.41%**）。低努力功耗估计：tt dynamic
+108.181 mW、leakage 1.540 mW；ss dynamic 91.339 mW、leakage 16.380 mW。ss 相对上一同角
+基线的 dynamic/leakage 仅 +0.72%/+0.12%。
+
+以上仍是 1 ns、ideal-clock 的综合探针，不是布局后 signoff：报告对 B-feed `clk` 的 30804
+loads 使用 high-fanout=1000 延迟估算，且无 CTS/提取互连寄生。下一步须补 CTS/布局后 STA。
+数据通路基元（synth_datapath 331 MHz tt / mac_bf16 330 MHz，§10.4）
+仍为 sky130 口径（引擎黑盒、未随控制平面重立，口径如实单列）。
 
 > **pre-pipeline 收敛耗时（如实）**：未流水化的 `rope_sincos` 组合锥（28–31 op 级）使
 > compile_ultra 收敛极慢——首轮 tt/ss 在 ~7 h 被外部终止、重跑 tt/ss 各 ~7.8 h 才完成
