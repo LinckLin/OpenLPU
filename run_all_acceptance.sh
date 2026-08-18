@@ -197,7 +197,11 @@ echo "[fpga smoke]  $(tail -1 "$RESULT_FILE" | cut -f3)"
 run_step "FPGA" "$LOG_DIR/sram_check.log" -- bash asic/run_sram_check.sh
 echo "[sram 缩编]   $(tail -1 "$RESULT_FILE" | cut -f3)"
 
-# ---- 11. ASIC：verilator --lint-only（rtl 顶层） ----
+# ---- 11. ASIC：matrix 状态 SRAM 真宏接口与数值定向测试 ----
+run_step "ASIC" "$LOG_DIR/matrix_sram_check.log" -- bash asic/run_matrix_sram_check.sh
+echo "[matrix SRAM] $(tail -1 "$RESULT_FILE" | cut -f3)"
+
+# ---- 12. ASIC：verilator --lint-only（rtl 顶层） ----
 if [ -n "$VERILATOR_BIN" ]; then
   run_step "ASIC" "$LOG_DIR/asic_lint.log" -- \
     verilator --lint-only -Wno-fatal -Wno-WIDTH -Irtl --top-module qcore_top rtl/qcore_top.sv
@@ -206,7 +210,7 @@ else
 fi
 echo "[asic lint]   $(tail -1 "$RESULT_FILE" | cut -f3)"
 
-# ---- 12. ASIC：综合（Yosys + sky130） ----
+# ---- 13. ASIC：综合（Yosys + sky130） ----
 if [ -n "$YOSYS_BIN" ]; then
   run_step "ASIC" "$LOG_DIR/asic_synth.log" -- bash asic/run_synth.sh "$CORNER"
 else
@@ -214,7 +218,7 @@ else
 fi
 echo "[asic synth]  $(tail -1 "$RESULT_FILE" | cut -f3)"
 
-# ---- 13. ASIC：OpenSTA（多 corner STA 的单 corner 探测；读 synth_datapath 网表） ----
+# ---- 14. ASIC：OpenSTA（多 corner STA 的单 corner 探测；读 synth_datapath 网表） ----
 if [ -n "$STA_BIN" ] && [ -f "$TT_LIB" ]; then
   t0=$(now_ns)
   LIB="$TT_LIB" "$STA_BIN" -no_splash -exit asic/sta.tcl >"$LOG_DIR/asic_sta.log" 2>&1
@@ -231,7 +235,7 @@ else
 fi
 echo "[asic sta]    $(tail -1 "$RESULT_FILE" | cut -f3)"
 
-# ---- 14. ASIC：MAC 综合（bf16/int8 同趟） ----
+# ---- 15. ASIC：MAC 综合（bf16/int8 同趟） ----
 if [ -n "$YOSYS_BIN" ]; then
   run_step "ASIC" "$LOG_DIR/asic_mac_synth.log" -- bash asic/run_mac_synth.sh "$CORNER"
 else

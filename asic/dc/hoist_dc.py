@@ -17,13 +17,13 @@ Three DC Presto / resource incompatibilities are fixed, all semantically neutral
      declarations (`logic`/`integer`/`wire`/`reg`) to the top of each module body
      (right after the `import` lines).
 
-  3. Full-design storage/core black-boxing.  The co-sim numeric cores
-     matrix_engine / vector_engine use O(1) random-access inferred RAMs and
-     runtime lane loops; DC would infer them as ~1.7 M flip-flops and unroll the
-     128-lane softfloat datapath (P10 §10.5 resource wall).  They become
-     `(* blackbox *)` macros, and the CP instruction array becomes a bb_sram
-     black box (1 sync write + 1 combinational read), so the full design
-     elaborates + links + compile_ultra runs through.
+  3. Full-design storage/core physicalization.  matrix_engine's inferred state
+     arrays are replaced by asic/matrix_engine_sram.sv, which instantiates nine
+     SMIC28 SRAM macros behind a live state/control shell.  Its 128x128
+     arithmetic array and vector_engine's runtime lane core remain physical-core
+     black boxes; otherwise DC would unroll the softfloat datapaths.  The CP
+     instruction array becomes a bb_sram black box (1 sync write + 1
+     combinational read).
 
 The frozen modules use brace-less bodies (Verilog-2001 style) and 2-space-indent
 module-level declarations, so the hoist keys on the exact-2-space indent.
@@ -122,16 +122,10 @@ def process_module(text):
 def make_blackbox(text):
     """Strip a numeric-core module to a DC black box (keep module/params/ports).
 
-    matrix_engine / vector_engine are the co-sim functional models of the
-    systolic array and the 128-lane datapath.  Their O(1) random-access inferred
-    RAMs (acc/partial/cin/scale) and runtime `for (i < len)` lane loops do not
-    express gate-level logic -- DC would infer the RAMs as ~1.7 M flip-flops and
-    unroll the 128-lane softfloat datapath (P10 §10.5 resource wall).  Both are
-    physical macros: the systolic array's MAC primitives (mac_bf16/mac_int8) and
-    the vector datapath's FP primitives (synth_datapath) are DC-synthesized
-    separately (asic-report.md §10.4).  Here the full design keeps them as black
-    boxes so the command-processor control plane elaborates + compiles past the
-    storage expansion.
+    vector_engine is the co-sim functional model of the 128-lane datapath.  Its
+    runtime `for (i < len)` loops do not express the physical lane pipeline and
+    would make DC unroll the full softfloat datapath.  The matrix engine is no
+    longer handled here: main() substitutes the macro-backed physical source.
     """
     lines = text.split('\n')
     n = len(lines)
@@ -242,8 +236,11 @@ def main() -> int:
     for f in sorted(SRC.glob('*.sv')):
         name = f.name
         text = f.read_text()
-        if name in ('matrix_engine.sv', 'vector_engine.sv'):
-            # Numeric cores -> black-box macros (P10 §10.5 storage/lane expansion).
+        if name == 'matrix_engine.sv':
+            # Physical matrix state/control shell + nine SMIC28 SRAMs.
+            out_text = (ASIC / 'matrix_engine_sram.sv').read_text()
+        elif name == 'vector_engine.sv':
+            # Runtime-lane co-sim core -> physical vector-core black box.
             out_text = make_blackbox(text)
         elif name == 'sram_macros.sv':
             # SMIC28 SRAM macros -> black boxes (timing from compiled .lib).
@@ -261,6 +258,11 @@ def main() -> int:
         if out_text != text:
             nchanged += 1
             print(f'desugared: {name}')
+    # The state SRAM/control shell is live; only the 128x128 arithmetic array
+    # stays a macro boundary (primitive timing is reported separately).
+    (DST / 'matrix_compute_core.sv').write_text(
+        (ASIC / 'matrix_compute_core_bb.sv').read_text()
+    )
     # synth_top.sv / sram_macro.sv / bb_sram.sv are DC-clean already; copy verbatim.
     for name in ('synth_top.sv', 'sram_macro.sv', 'bb_sram.sv'):
         (DST / name).write_text((ASIC / name).read_text())

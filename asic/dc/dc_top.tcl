@@ -7,16 +7,14 @@
 #
 # The engine RTL is the DC-desugared tree asic/dc/gen_full/ (see hoist_dc.py:
 # loop-break `k=-1`->`break`, variable-bound loop -> fixed bound + guard,
-# module-level declaration hoist, and the full-design third transform — the
-# co-sim numeric cores matrix_engine / vector_engine become `(* blackbox *)`
-# macros and the CP instruction array becomes a bb_sram black box).  synth_top.sv
+# module-level declaration hoist, macro-backed matrix_engine substitution,
+# vector_engine black-boxing, and CP instruction SRAM remapping).  synth_top.sv
 # / sram_macro.sv / bb_sram.sv are copied verbatim (DC-clean).
 #
-# NOTE: the engines are the *co-sim functional model* (runtime-bound loops,
-# inferred RAMs), NOT the physical 128-lane datapath — see asic-report.md §7.
-# The numeric-core macros' primitives (mac_bf16/mac_int8, synth_datapath) are
-# DC-synthesized separately (§10.4); here the full design records whether DC can
-# elaborate/link/compile the control plane past the storage expansion (§10.5).
+# NOTE: matrix_engine now exposes a synthesizable state/control shell with nine
+# true SRAM instances; its 128x128 arithmetic array is matrix_compute_core.
+# matrix_compute_core and vector_engine remain physical-core black boxes, with
+# their FP/INT primitives synthesized separately (§10.4).
 #
 
 # Env:  DC_CORNER  tt_025C_1v80 | ss_100C_1v60   (flow corner label)
@@ -71,15 +69,18 @@ analyze -format sverilog asic/dc/gen_full/synth_top.sv
 analyze -format sverilog asic/dc/gen_full/sram_macro.sv
 analyze -format sverilog asic/dc/gen_full/bb_sram.sv
 elaborate synth_top
-# --- black boxes: scratchpad SRAM, engine macros, instruction SRAM -----------
+# --- black boxes/macros: scratchpad, vector core, instruction/state SRAM -----
 # set_dont_touch keeps DC from optimizing/expanding them (plan step 5; §10.5).
 # kh4096x64 / kn128x16 are compiled SMIC28 SRAM macros (timing from the mapped
 # .db above).  sky130 mode pairs them with 130 nm logic = cross-technology
 # reachability probe; smic28 mode pairs them with 28 nm logic = same-technology
 # baseline (D18).
-set_dont_touch [get_cells u_sram]
-set_dont_touch [get_references {sram_macro matrix_engine vector_engine bb_sram \
-                                kh4096x64 kn128x16}]
+set macro_cells [get_cells -hierarchical -filter \
+  {ref_name =~ sram_macro* || ref_name =~ matrix_compute_core* || \
+   ref_name =~ vector_engine* || \
+   ref_name =~ bb_sram* || ref_name =~ kh4096x64* || ref_name =~ kn128x16*}]
+puts "INFO: protected macro/black-box instances=[sizeof_collection $macro_cells]"
+if {[sizeof_collection $macro_cells] > 0} { set_dont_touch $macro_cells }
 
 # --- constraints: 1 ns probe clock (sta.tcl caliber) ------------------------
 create_clock -name clk -period 1.0 [get_ports clk]
@@ -93,9 +94,22 @@ if {$compile == 1} {
 }
 
 # --- reports -----------------------------------------------------------------
+set matrix_sram_cells [get_cells -hierarchical -filter \
+  {full_name =~ u_cp/u_matrix/* && ref_name =~ kh4096x64*}]
+set matrix_sram_inputs [get_pins -of_objects $matrix_sram_cells -filter \
+  {direction == in}]
+set matrix_sram_outputs [get_pins -of_objects $matrix_sram_cells -filter \
+  {direction == out}]
+puts "INFO: matrix SRAM instances=[sizeof_collection $matrix_sram_cells]"
 redirect -tee $dc_dir/reports/synth_top_${tag}.rpt {
   puts "==== DC tech=$tech corner=$corner design=synth_top compile=$compile ===="
   report_timing -path_type full -delay_type max -max_paths 10 -sort_by slack -nosplit
+  puts "==== Matrix SRAM input/setup paths ([sizeof_collection $matrix_sram_cells] instances) ===="
+  report_timing -path_type full -delay_type max -to $matrix_sram_inputs \
+    -max_paths 10 -sort_by slack -nosplit
+  puts "==== Matrix SRAM read paths (through Q) ===="
+  report_timing -path_type full -delay_type max -through $matrix_sram_outputs \
+    -max_paths 10 -sort_by slack -nosplit
   report_area -hierarchy
   report_power
   report_reference

@@ -27,7 +27,7 @@ flowchart LR
     qrun --> rtl["QCore RTL<br/>SystemVerilog"]
     qsim -. 三级 golden .-> rtl
     rtl --> fpga["FPGA 原型<br/>(ZCU104)"]
-    rtl --> asic["ASIC 流程<br/>(sky130)"]
+    rtl --> asic["ASIC 流程<br/>(SMIC28 当前 / sky130 legacy)"]
 ```
 
 - **Q-ISA**：Tensor Command ISA（33 条，128-bit 编码），非 scalar CPU ISA。
@@ -44,7 +44,7 @@ qrun/          QMetal 运行时 + CLI（.qbin → 逐 token 生成）
 qsim/          ISA 模拟器（功能级 executor + 时序级 timing / timing_p6）
 rtl/           QCore SystemVerilog（matrix/vector/dma/kv 引擎 + CP + SRAM + co-sim tb）
 fpga/          板卡无关接口层（clock_reset / host_if / ddr_if + 集成 smoke）
-asic/          ASIC 流程（Yosys + sky130 综合 / OpenSTA / 门级网表）
+asic/          ASIC 流程（Synopsys DC + SMIC28 当前基线；Yosys/OpenSTA + sky130 legacy）
 golden/        P1 golden 参考（Qwen3-0.6B 中间 tensor/KV/logits dump）
 ref/           PyTorch 参考实现（model.py / baseline.py / roofline.py）
 docs/          规格（spec.md + spec-src/）与各节点报告（p1–p10）
@@ -68,8 +68,9 @@ plans/         各节点计划与评审记录
 
 > 细节与未达标项（不粉饰）见各节点报告：`docs/p5/m4-report.md`（INT8 交叉一致率 10/10；
 > INT4 W4A16 数据通路达成、部署质量 3/20 未达硬门槛——per-64-group/混合精度归 backlog，
-> 见 `docs/p4/quant-error-report.md`）、`docs/p10/asic-report.md`（1 GHz 未收敛；P10b
-> 流水化后 tt Fmax ≈ 129 MHz，200 MHz 未达，分级方案见报告 §9.5）。
+> 见 `docs/p4/quant-error-report.md`）、`docs/p10/asic-report.md`（当前 SMIC28 代表数据
+> 通路闭合 1 ns 综合探针，矩阵状态 RAM 已真宏例化；整芯片 1 GHz 与 CTS/寄生 signoff
+> 尚未闭合。sky130 P10b 129 MHz 结果作为 legacy 保留）。
 
 ## Synopsys 工具复现注（DC/VCS）
 
@@ -110,8 +111,8 @@ python3 -m qrun /tmp/qwen3-0.6b.qbin --prompt "Explain attention" --max-new 20
 - **numpy**、**ml_dtypes**（bfloat16 dtype）
 - **torch** + **transformers**（qrun 运行时 / HF 现场参照 / tokenizer）
 - **Verilator 4.038**（rtl / fpga co-sim，版本锁定）
-- **Yosys 0.44** + **SkyWater sky130 PDK** liberty（asic 综合）
-- **OpenSTA**（asic 多 corner STA）
+- **Synopsys Design Compiler** + 本地 **SMIC28 28HKCP** 库（当前 ASIC 基线）
+- **Yosys 0.44** + **OpenSTA** + SkyWater sky130 liberty（legacy ASIC 回归）
 
 > 编译器前端（qforge）与 qsim 功能级/时序级模拟器仅需 numpy（+ 可选 ml_dtypes），无 torch 依赖。
 
@@ -141,7 +142,7 @@ python3 -m qrun /tmp/qwen3-0.6b.qbin --prompt "Explain attention" --max-new 20
 | **runtime 运行时** | `qrun/` | `python3 -m qrun <qbin> --prompt "..."` | `python3 qrun/m4.py` | `docs/p5/m4-report.md`、`docs/p5/fullproggen.md` |
 | **RTL** | `rtl/` | `cd rtl/tb && verilator --cc --exe --build ...`（见 `docs/p7`） | `python3 rtl/tb/run_cosim.py` | `docs/p7/rtl-report.md` |
 | **FPGA** | `fpga/` | `cd fpga/tb && verilator --cc --exe --build ...`（见 `docs/p9`） | `python3 fpga/tb/run_fpga_smoke.py` | `docs/p9/porting.md`、`docs/p9/board-candidates.md` |
-| **ASIC** | `asic/` | `bash asic/run_synth.sh tt_025C_1v80` | `bash asic/run_synth.sh tt_025C_1v80` + `bash asic/run_mac_synth.sh tt_025C_1v80` | `docs/p10/asic-report.md` |
+| **ASIC** | `asic/` | `DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_top` | `bash asic/run_matrix_sram_check.sh` + `bash asic/run_synth.sh tt_025C_1v80` + `bash asic/run_mac_synth.sh tt_025C_1v80` | `docs/p10/asic-report.md` |
 | **一键验收** | 仓库根 | `bash run_all_acceptance.sh`（`--quick` 快速 / `--full` 含 m4 全量） | `bash run_all_acceptance.sh`（八组件逐条，见 `docs/reproduction.md` §0） | `docs/reproduction.md` §0 |
 
 ## 从零复现

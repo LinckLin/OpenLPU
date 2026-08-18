@@ -2,7 +2,7 @@
 
 > 本文给出 QCore 全链路（golden → qsim → qrun → RTL co-sim → ASIC）的逐段复现命令与预期输出。
 > 环境：Python 3.10、numpy、ml_dtypes、torch、transformers；Verilator 4.038（RTL/FPGA）；
-> Yosys 0.44 + SkyWater sky130（ASIC）。不跑 formatter/linter/项目级测试套件。
+> Synopsys DC + 本地 SMIC28 28HKCP（当前 ASIC），Yosys/OpenSTA + sky130（legacy）。
 
 ## 0. 前置：模型与依赖
 
@@ -213,10 +213,31 @@ python3 run_fpga_smoke.py
 P9 FPGA smoke: ALL PASS
 ```
 
-## 6. ASIC（综合 + STA）
+## 6. ASIC（SMIC28 当前基线 + sky130 legacy）
 
-sky130 liberty（`sky130_fd_sc_hd__*.lib`，5 corner）来自 skywater-pdk 官方 `*.lib.json` 经其
-`python-skywater-pdk` 转换器生成（open_pdks 集成流是其一键复现路径）：
+当前 SMIC28 流程先从本地商业 PDK 生成/映射标准单元与 SRAM `.db`；这些商业视图不进入
+仓库。矩阵状态壳的 Verilator 测试使用与真宏同端口、同 1-cycle read 语义的行为模型：
+
+```bash
+# 九个 kh4096x64 的 bank/address、单口冲突、首元素预取与四种数值模式
+bash asic/run_matrix_sram_check.sh
+
+# 准备本地 SMIC28 标准单元和 SRAM 库（详见 asic/sram_macros/*/GEN.md）
+bash asic/smc28/setup_smic28.sh
+
+# 当前全顶层双角 compile_ultra；矩阵状态/控制壳 + 9 个真 SRAM，算术核保持宏边界
+DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_top
+DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 synth_top
+
+# 代表数据通路与 BF16 MAC 的 1 ns ideal-clock 探针
+DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_datapath
+DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 mac_bf16
+```
+
+以下是保留的 sky130 legacy 开源复现路径。sky130 liberty（`sky130_fd_sc_hd__*.lib`，
+5 corner）来自 skywater-pdk 官方 `*.lib.json` 经其 `python-skywater-pdk` 转换器生成：
+
+`open_pdks` 集成流是其一键复现路径：
 
 ```bash
 # open_pdks 集成流：产出 5-corner liberty 至 $PDK_ROOT/sky130A/libs.ref/sky130_fd_sc_hd/lib/
@@ -247,12 +268,11 @@ for c in tt_025C_1v80 ss_n40C_1v28 ss_100C_1v60 ff_100C_1v65; do
 done
 ```
 
-预期输出（摘要，全文见 `docs/p10/asic-report.md` §0–§3/§9）：
+预期输出（摘要，全文见 `docs/p10/asic-report.md` §0–§3/§9–§10）：
 
 ```text
-逻辑综合 ✅（FP ALU 5088 门 / BF16 MAC 3610 门 / INT8 MAC 555 门——组合基线口径）
-P10b 流水化后（§9）：FP 基元全时钟流水（级数 ≤ 冻结 vector_latency）、MAC bf16 5 级/int8 2 级
-STA：tt Fmax ≈ 129 MHz（add/sub 7.77 ns 限制，数据通路）/ MAC ≈ 117 MHz；
-     ss/ff corner 见报告 §3；200 MHz 目标未达（如实，分级方案见 §9.5）
-结论：1 GHz 未收敛；流水化后 129 MHz 为当前物理实现口径（token/s 折算见报告 §6）
+SMIC28：矩阵状态壳定向测试 4/4 PASS；DC 识别 9 个矩阵 kh4096x64，并报告专属输入/读出路径
+SMIC28：代表 synth_datapath / mac_bf16 的 tt/ss 1 ns ideal-clock 探针均 MET
+legacy sky130：P10b 数据通路 tt Fmax ≈ 129 MHz；历史 ss/ff corner 见报告 §3
+结论：以上均为 pre-layout 综合/STA 口径；整芯片 1 GHz 与 CTS/寄生 signoff 尚未闭合
 ```

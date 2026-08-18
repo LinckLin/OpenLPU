@@ -4,7 +4,8 @@
 > OpenSTA 多 corner STA；SRAM 宏按公开密度上下界估算并单列占比。
 > 冻结快照：`rtl/ref/asicsnap/`（开工时打点；rtl/ 只读，P8 未改 rtl/ 源）。
 > D18 更新（2026-08-19）：代表数据通路与 BF16 MAC 已用 SMIC28 HDC30P140 RVT
-> 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；全系统控制平面与物理 signoff 另行列示。
+> 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；矩阵状态 RAM 已接入 9 个真宏；全系统
+> 算术核、CTS 与物理 signoff 另行列示。
 
 ## 0. 结论速览
 
@@ -20,7 +21,8 @@
 > **DC/VCS 补充（§10/§11）**：Synopsys DC O-2018.06-SP1 compile_ultra（基元级）与
 > VCS-MX O-2018.09-SP2 功能仿真（27 用例与 Verilator 字节级一致）已交付；
 > **O6 全设计扩展：synth_top 在 DC 侧 elaborate + link + compile_ultra 全跑通**
-> （控制平面 1.000 mm² / Fmax 136 MHz，数字核/SRAM 按物理宏黑盒，§10.5）。
+> （历史口径为控制平面 1.000 mm² / Fmax 136 MHz；Track 2.2b 已将矩阵状态 RAM 从
+> 整模块黑盒推进为 9 个真 SRAM + 可综合控制壳，§10.8）。
 > DC 运行需 license 27000@bics109，VCS 需 snps-centos7 兼容命名空间（详见 §10/§11 与 README）。
 
 ## 1. Elaboration（验收项 1）
@@ -292,7 +294,8 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 > （synth_datapath / mac_bf16）在双工艺下跑通 compile_ultra 并出 tt/ss 时序/漏电/面积；
 > legacy sky130 结果与 OpenSTA 同口径交叉验证；
 > **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
-> 控制平面真综合，§10.5）。
+> 控制平面真综合，§10.5）；Track 2.2b 进一步综合矩阵状态/控制壳并链接 9 个真 SRAM，
+> 128×128 算术核与 vector core 仍保留物理宏边界（§10.8）。
 
 ### 10.1 工具与 license（步骤 1）
 
@@ -335,7 +338,7 @@ compile_ultra 跑通（见 §10.5）：
 | 1 | `k = -1;` 循环跳出（Yosys 无 `break` 的惯用法） | synth_datapath.sv×2、softfloat.sv×2 | **dc_shell 死循环**（6 行最小复现确认；`break` 瞬时返回） | `k = -1;` → `break;` |
 | 2 | 变长边界 `for`（sticky-bit OR） | softfloat.sv×2 | ELAB-900「Loop exceeded maximum iteration limit」 | 定界 + 运行时 guard（同 preprocess.py） |
 | 3 | 模块级「声明在使用之后」（SV declaration anywhere） | command_processor 等 8 模块 | VER-954/VER-956（先隐式声明后重定义） | 声明上提（hoist） |
-| 4 | 运行期 `for (i < len)` 组合循环 + 推断 RAM | vector_engine/matrix_engine（co-sim 功能模型） | 资源/语义边界（~1.7 M 触发器 + 128-lane softfloat） | **黑盒化**（数字核 + 存储 → `(* blackbox *)` 宏，见 §10.5） |
+| 4 | 运行期 `for (i < len)` 组合循环 + 推断 RAM | vector_engine/matrix_engine（co-sim 功能模型） | 资源/语义边界（~1.7 M 触发器 + 128-lane softfloat） | O6 先整核黑盒化（§10.5）；Track 2.2b 已用真 SRAM + 控制壳取代 matrix 整核黑盒（§10.8），vector/阵列核边界保留 |
 | 5 | co-sim 端口宽度失配（vector_engine `len` 32b vs CP 16b） | vector_engine↔command_processor | LINK-3/LINK-25（linker 拒绝） | 黑盒端口收窄对齐 CP（§10.5） |
 
 ### 10.4 DC vs OpenSTA 交叉验证（步骤 4）
@@ -407,6 +410,9 @@ DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 mac_bf16
 
 ### 10.5 全设计 synth_top（步骤 5，全设计 elaborate + compile_ultra 跑通）
 
+> 本节记录 O6 首次打通全顶层时的历史基线。Track 2.2b 已取代其中 matrix 的整模块
+> 黑盒方案；当前矩阵状态/控制与 9 个 SRAM 的口径见 §10.8。
+
 `synth_top` = command_processor@MAX_VEC=128 + 8 MiB scratchpad SRAM 黑盒。SRAM 按
 **空模块黑盒 + set_dont_touch**（`sram_macro.sv` 空模块；`asic/dc/mem_stub.lib` 的
 时序模型因 LC 2018 不支持标量 pin 上的 `bus_type`（LBDB-76）无法表达 23/8 位总线，
@@ -446,20 +452,20 @@ SRAM 估算 + §10.4 基元口径另计）。关键路径 7.33 ns 是控制平�
 
 ### 10.6 交付物与需评审项
 `asic/dc/` 交付：`run_dc.sh` / `dc_flow.tcl` / `dc_top.tcl` / `desugar_dc.py` /
-`hoist_dc.py`（新增第 4 类存储/数字核黑盒化 + 第 5 类端口宽度修正）/ `clean_lib.py` /
+`hoist_dc.py`（第 4 类现为 matrix 宏壳替换 + vector 核黑盒，第 5 类端口宽度修正）/
+`clean_lib.py` /
 `sta_dc.tcl` / `mem_stub.lib`（DC-local）/ `bb_sram.sv`（指令流 SRAM 黑盒）+ `db/`
-（tt/ss `.db` + mem_stub.db）+ `gen/` / `gen_full/`（desugar 产物，含黑盒版
-matrix_engine/vector_engine）+ `reports/`（基元 4 份 rpt + 4 份网表 + 全设计
+（tt/ss `.db` + mem_stub.db）+ `gen/` / `gen_full/`（desugar 产物；matrix 为真 SRAM
+状态壳，matrix_compute_core/vector_engine 为黑盒）+ `reports/`（基元 4 份 rpt + 4 份网表 + 全设计
 synth_top tt/ss 2 份 rpt + 2 份网表 .v）。
 
 **需评审项**：
 1. **Fmax 口径重标定**：DC compile_ultra 对同一 liberty 的 Fmax(tt)=331 MHz，显著高于
    Yosys/OpenSTA 的 129 MHz（§9.3），差因为综合工具（§10.4 已证 STA 一致）；是否以
    DC 结果作为物理数据通路新口径（与 §9.5 的 BF16 重标定并列）。
-2. **全设计口径（O6 更新）**：全设计 synth_top 现已 elaborate + link + compile_ultra
-   跑通，但矩阵/向量数字核与 SRAM 按物理宏边界黑盒（基元在 §10.4 真综合）、控制平面
-   1.000 mm² / Fmax 136 MHz 为如实口径——是否接受「全设计控制平面真综合 + 数字核/SRAM
-   宏黑盒」作为 P10 §10 结论。
+2. **全设计口径（O6 历史项）**：首次 synth_top 跑通时矩阵/向量数字核与 SRAM 均按宏
+   边界黑盒，控制平面 1.000 mm² / Fmax 136 MHz；matrix 整核黑盒已由 Track 2.2b 的
+   9 个真 SRAM + 控制壳取代（§10.8），不能再把该历史面积当当前全顶层面积。
 3. **黑盒接口口径**：vector_engine 黑盒端口 `len` 由 32 bit 收窄为 16 bit 对齐 CP
    （co-sim 静默加宽、DC linker 严格），属黑盒副本（gen_full/）语义中性修正，是否接受。
 4. **license/库兼容**：sky130 liberty 需 clean_lib.py 清理才可被 LC 读取、mem_stub.lib
@@ -535,13 +541,83 @@ area 272559.7→268726.7 μm²（0.273→0.269 mm²，**-1.41%**）。低努力�
 
 以上仍是 1 ns、ideal-clock 的综合探针，不是布局后 signoff：报告对 B-feed `clk` 的 30804
 loads 使用 high-fanout=1000 延迟估算，且无 CTS/提取互连寄生。下一步须补 CTS/布局后 STA。
-代表数据通路基元已经完成 SMIC28 重立并闭合 1 GHz 综合探针（§10.4）；全顶层中的
-matrix/vector engine 仍为宏黑盒，其内部 RAM 宏实例化与物理接口时序仍待闭合。
+代表数据通路基元已经完成 SMIC28 重立并闭合 1 GHz 综合探针（§10.4）；Track 2.2b 又完成
+matrix 状态 RAM 的真宏例化与接口报告（§10.8）。剩余边界是 128×128 matrix 算术核、
+vector 数字核，以及 CTS/提取互连寄生后的整芯片 signoff。
 
 > **pre-pipeline 收敛耗时（如实）**：未流水化的 `rope_sincos` 组合锥（28–31 op 级）使
 > compile_ultra 收敛极慢——首轮 tt/ss 在 ~7 h 被外部终止、重跑 tt/ss 各 ~7.8 h 才完成
 > Delay Optimization 并产出最终 report_timing（上表即最终值，非观测值）。rope 锥 68.11 ns
 > sky130 → 流水化后非瓶颈的降路径结论不受收敛耗时影响。
+
+### 10.8 矩阵状态 SRAM 真宏例化（Track 2.2b）
+
+Track 2.2a 已证明代表 BF16/INT8 基元在 SMIC28 1 ns 综合探针下可闭合，但 §10.5 的
+`matrix_engine` 仍是整模块黑盒，既看不到内部状态 RAM 面积，也无法检查 SRAM 接口。
+本节点保持功能 co-sim 的 `rtl/matrix_engine.sv` 不动，只在 DC 派生树中用
+`asic/matrix_engine_sram.sv` 替换它；`matrix_compute_core` 作为 128×128 算术阵列边界，
+继续使用显式黑盒。由此，报告覆盖矩阵状态/控制与真 SRAM 接口，但不虚构阵列内部面积
+或时序。
+
+#### 10.8.1 容量与 bank 映射
+
+全部宏均为 SM18CA001 单口 `kh4096x64`，同步写、1-cycle 注册读，低有效 `CEN/WEN`，
+`EMA=3'b011`、`EMAW=2'b01`、`EMAS=0`、`RET1N=1`。输出元素按
+`bank=index[1:0]`、`word=index[13:2]` 交错：
+
+| 状态 | 真宏 | 逻辑容量 | 物理容量 | 说明 |
+|---|---:|---:|---:|---|
+| `{partial, acc}` | 4 × 4096×64 | 128 KiB | 128 KiB | 两个 32-bit 状态打包，无浪费 |
+| C seed | 4 × 4096×64 | 64 KiB | 128 KiB | 每字仅用低 32 bit |
+| dequant scale | 1 × 4096×64 | 16 KiB | 32 KiB | 每字仅用低 32 bit |
+| **合计** | **9 个宏** | **208 KiB** | **288 KiB** | 位利用率 **72.22%** |
+
+frontend `elaborate + link` 精确识别 9 个矩阵宏；其宏面积为 **707049.9141 µm²
+(0.707050 mm²)**。全顶层共保护 15 个 SRAM/黑盒实例，矩阵外还包括 B-feed 宏、指令/
+scratchpad SRAM 及 matrix/vector 数字核边界。
+
+#### 10.8.2 单口调度与读回协议
+
+每个 accumulator bank 带一个 1-entry writeback queue。新读请求优先；若固定延迟算术核
+的返回结果与同 bank 新读冲突，结果携带 `valid/bank/word/final` tag 入队，并在该 bank
+下一空闲周期写回。`outstanding` 计数在全部队列真正落宏前禁止 C 读回，`done` 也只在
+最终结果完成物理写入时拉高。契约要求 `N % 4 == 0` 且算术核延迟短于同一元素的 `M*N`
+复用距离；冻结模式 `N=128`，行为压力核为 4 cycle，仿真最小复用距离为 8。
+
+单口同步读还暴露了 CP 过渡风险：`S_MX_WAIT` 看到 `done` 时才把 `rd_ptr` 清零，若宏在
+同一边沿仍采用旧地址，第一个输出会陈旧。壳层用 `c_prefetch_zero` 强制 WAIT→RDOUT
+过渡周期读取元素 0；定向测试故意把等待态地址留在 127，验证首元素仍正确。
+
+#### 10.8.3 验证与边界
+
+`asic/run_matrix_sram_check.sh` 用同端口行为宏和 4-cycle tagged compute core 覆盖
+INT8 accumulate、BF16+C seed、INT8 dequant(K=128)、INT4 dequant(K=128)，四例全部
+bit-exact PASS。4-cycle 延迟特意制造 `latency % 4 == 0` 的读/返回同 bank 冲突，覆盖
+writeback queue；陈旧 `c_raddr=127` 覆盖首元素预取。DC frontend 另为 9 个宏生成
+`to SRAM inputs` 与 `through SRAM Q` 两组 scoped timing，避免只用实例计数代替接口证据。
+
+#### 10.8.4 SMIC28 双角全顶层综合结果（1 ns ideal-clock probe）
+
+两角均以 `DC_TECH=smic28`、`DC_TOP_COMPILE=1` 对当前派生顶层执行
+`compile_ultra`；Fmax 按本报告统一口径 `1 / data arrival` 计算。全局最差路径和矩阵
+宏接口的 scoped 结果如下。`total cell` 包含逻辑与所有受保护宏/黑盒；其中矩阵九宏的
+层次局部面积仍为 707049.9141 µm²，顶层 macro/black-box 面积还包含其它 SRAM/黑盒。
+
+| corner | 全局最差路径（data arrival / slack） | Fmax probe | total cell area | 逻辑/非宏面积 | macro/black-box area | dynamic / leakage | 矩阵 SRAM 输入 scoped | 矩阵 Q 读 scoped |
+|---|---|---:|---:|---:|---:|---|---|---|
+| `tt_025C_1v80` | `u_cp/C_reg[31][4] → hbm_addr[39]`，1.47 ns / **-0.47 ns** | **680.3 MHz** | 978016.837384 µm² | 190890.085675 µm² | 787126.751709 µm² | 121.2793 / 2.1169 mW | 0.80 ns / **+0.01 ns MET** | 0.48 ns / **+0.50 ns MET** |
+| `ss_100C_1v60` | `u_cp/u_bfeed/s_ang2_reg[2][24] → s_r1_reg[2][16]`，1.93 ns / **-0.95 ns** | **518.1 MHz** | 980001.631439 µm² | 192874.879730 µm² | 787126.751709 µm² | 101.7342 / 16.7783 mW | 0.97 ns / **-0.18 ns VIOLATED** | 0.63 ns / **+0.34 ns MET** |
+
+TT 的全局最差 slack 与 HBM 输出路径绑定，B-feed 路径紧随；SS 的全局最差路径在
+B-feed。矩阵宏读出 Q 在两角均满足 1 ns 探针，但 SS 从控制逻辑到 SRAM 地址/写控制的
+最差输入路径仍有 0.18 ns setup 违例，需要在下一阶段通过驱动、约束或物理实现处理。
+因此 Track 2.2b 的结论是“真实状态 SRAM 已接入且读回接口可观测”，不是全顶层时序收敛。
+上述数据没有 CTS、布局、提取互连寄生，也没有 128×128 算术核 Liberty；不能替代 signoff。
+
+**边界声明**：`matrix_compute_core` 没有 Liberty，因此本节的全顶层结果只证明状态/控制壳
+和真实 SRAM 接口，不代表 128×128 阵列内部时序/面积，更不能宣称整芯片 1 GHz signoff。
+阵列代表 BF16/INT8 基元的独立 1 ns 探针见 §10.4；下一物理阶段仍需计算核 Liberty、
+floorplan/CTS/布线与提取寄生 STA。
 
 ## 11. VCS 功能仿真（VCS-MX O-2018.09-SP2，P10 §11）
 

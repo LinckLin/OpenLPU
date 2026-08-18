@@ -15,9 +15,12 @@
 //   * HBM (16 GiB, D3) = off-die; exposed as byte-level I/O pins (the HBM PHY
 //     is a licensed macro, out of scope).
 //
-// All other logic (command processor FSM/decode/issue, matrix MAC datapath,
-// vector 128-lane datapath, softfloat, rope LUT, DMA, KV addrgen) is truly
-// synthesized to sky130 gates.
+// In the current SMIC28 full-top flow, the command/control logic and the
+// matrix-engine state/control shell are synthesized, and that shell contains
+// nine characterized kh4096x64 SRAM macros.  The 128x128 matrix arithmetic
+// array and 128-lane vector numeric core remain physical-core black boxes;
+// their representative BF16/INT8 primitives are synthesized separately.
+// The legacy sky130 flow remains available for comparison.
 //
 // Source of truth: rtl/ref/asicsnap/ (frozen snapshot; rtl/ is read-only here).
 // ============================================================================

@@ -11,8 +11,8 @@
 |---|---|
 | 项目 | **QCore**——LLM 推理个人级加速平台：Hugging Face Qwen 一键编译部署到自有编译器 / ISA / 模拟器 / Runtime / RTL / ASIC |
 | 开源仓库 | `github.com/LinckLin/OpenLPU`（origin `git@github.com:LinckLin/OpenLPU.git`，分支 `main`） |
-| 基线 HEAD | `94dd045`（Track 2.1 已推送；本轮 Track 2.2a 数据通路重立尚未提交） |
-| 状态一句话 | 全栈功能闭环 + 开源 + 0.6B 全路径与 HF 逐位一致；ASIC 已切 SMIC28（28nm）基线：控制平面 tt/ss 为 **636.9/471.7 MHz**，代表数据通路与 BF16 MAC 的 tt/ss 均闭合 **1 GHz ideal-clock 探针**；整芯片 CTS/寄生 signoff 尚未完成 |
+| 前序基线 HEAD | `7d48d9f`（Track 2.2a 已推送；本文件记录后续 Track 2.2b 增量） |
+| 状态一句话 | 全栈功能闭环 + 开源 + 0.6B 全路径与 HF 逐位一致；ASIC 已切 SMIC28（28nm）基线：控制平面 tt/ss 为 **636.9/471.7 MHz**，代表数据通路与 BF16 MAC 的 tt/ss 均闭合 **1 GHz ideal-clock 探针**；matrix 状态已接入 9 个真 SRAM（0.707050 mm² 宏面积），算术核 Liberty 与整芯片 CTS/寄生 signoff 尚未完成 |
 | 工作纪律 | **任何新计划必须先经 subagent 评审循环至「评审一致，可执行」再执行**；数字必须引用冻结规格原值；验收不过留在当前节点；新范围只登记 backlog |
 
 ---
@@ -50,7 +50,7 @@ qforge 编译器前端（QNN IR → qbin 141 张量） → Q-MLIR pass（qnn→q
 | `rtl/` | QCore RTL + `tb/`（co-sim 驱动）+ `ref/`（qsim_baseline、asicsnap 合成快照） |
 | `asic/` | `dc/`（DC 流程脚本 + reports）、`smc28/`（setup_smic28.sh）、`sram_macros/`（宏仿真模型 + GEN.md + PORTS.md） |
 | `plans/` | 全部立项计划（含评审修订历史） |
-| `run_all_acceptance.sh` | 总验收（quick 11 / full 13） |
+| `run_all_acceptance.sh` | 总验收（quick 12 / default 14 / full 15） |
 
 ---
 
@@ -91,6 +91,7 @@ qforge 编译器前端（QNN IR → qbin 141 张量） → Q-MLIR pass（qnn→q
 | 锥流水化（14 级 register-slice） | rope_sincos 锥 68.11 ns(sky130) → 非瓶颈；SMIC28 pre 116.4/87.0 → **post 217.9/164.5 MHz（1.87×/1.89×）** | ✅ |
 | 量化器流水化（Track 2.1） | 倒数 NR 迭代逐操作切分 + quant mul/clip 两级流水；tt **4.59→1.57 ns，217.9→636.9 MHz（2.92×）**，ss **6.08→2.12 ns，164.5→471.7 MHz（2.87×）**；双角 top-10 均无 kv_quantdequant | ✅ tt/ss 全顶层重综合完成 |
 | 数据通路 SMIC28 重立（Track 2.2a） | `synth_datapath` / `mac_bf16` 切 HDC30P140 RVT；tt/ss arrival **0.98–0.99 ns，1 ns 探针全 MET**；面积 0.0031/0.0019 mm² 量级 | ✅ 四次 compile_ultra 完成，物理裕量待 signoff |
+| matrix 状态 RAM 宏化（Track 2.2b） | 4×acc/partial + 4×C seed + 1×scale = **9 个 kh4096x64**；逻辑/物理容量 208/288 KiB（72.22%）；宏面积 **0.707050 mm²**；tagged writeback queue + 首元素预取 | ✅ 四模式定向测试；TT 输入/Q scoped timing MET，SS Q MET 但输入最差 **-0.18 ns**；算术核仍为黑盒 |
 | D18 工艺切换 | ASIC 基线 = SMIC28（28HKCP HDC30P140 RVT + SMIC28 宏）；sky130 全流程保留为 legacy | ✅ |
 
 ### 3.3 关键未兑现（如实）
@@ -124,14 +125,18 @@ qforge 编译器前端（QNN IR → qbin 141 张量） → Q-MLIR pass（qnn→q
 cd /home/lzl/project/newlpu
 
 # 总验收（W1）
-./run_all_acceptance.sh quick      # 11 项
-./run_all_acceptance.sh full       # 13 项
+./run_all_acceptance.sh quick      # 12 PASS + 2 SKIP
+./run_all_acceptance.sh            # 默认全量 14 项
+./run_all_acceptance.sh full       # 默认全量 + m4，15 项
 
 # qsim 全部测试（52 个）
 python3 -m pytest qsim/ -q
 
 # B' 专用 co-sim（sink/window/PF 三例，0 ULP 判据）
 python3 rtl/tb/run_cosim_bprime.py
+
+# SMIC28 matrix 状态宏壳（四数值模式 + 单口冲突 + CP 首元素预取）
+bash asic/run_matrix_sram_check.sh
 
 # 默认回归子集（vector 22 + KV 2；ROPE_pos40960 为既有 boundary note 8 ULP）
 python3 - <<'EOF'   # 或读 run_cosim.py 内 run_vector_tests/run_kv_tests
@@ -212,6 +217,23 @@ cd rtl/tb && verilator --cc --exe --build -j 16 -O2 -Wno-fatal -Wno-WIDTH \
 | pre-pipeline（对照） | 8.59 ns → 116.4 MHz | 11.49 ns → 87.0 MHz | rope_sincos 锥 8.56/11.43 ns 紧随 |
 | legacy（sky130 逻辑 + SMIC28 宏，跨工艺可达性口径） | 14.7 MHz（68.11 ns） | 未跑 | 历史参考 |
 
+本轮 Track 2.2b 的双角 DC 报告为
+`asic/dc/reports/synth_top_smic28_tt_025C_1v80_mxram.rpt` 与
+`asic/dc/reports/synth_top_smic28_ss_100C_1v60_mxram.rpt`。两份报告均为
+`compile=1`、1 ns ideal-clock 的 pre-layout 综合探针，顶层共 11 个宏/黑盒；矩阵九宏的
+层次局部宏面积为 **707049.9141 µm²（0.707050 mm²）**，顶层 macro/black-box 合计为
+**787126.751709 µm²**。
+
+| corner | 全局最差 data arrival / slack | Fmax probe | total cell area | dynamic / leakage | 矩阵 SRAM 输入 scoped | 矩阵 Q 读 scoped |
+|---|---|---:|---:|---|---|---|
+| `tt_025C_1v80` | 1.47 ns / **-0.47 ns**（`C_reg[31][4] → hbm_addr[39]`） | **680.3 MHz** | 978016.837384 µm² | 121.2793 / 2.1169 mW | 0.80 ns / **+0.01 ns MET** | 0.48 ns / **+0.50 ns MET** |
+| `ss_100C_1v60` | 1.93 ns / **-0.95 ns**（B-feed `s_ang2_reg[2][24] → s_r1_reg[2][16]`） | **518.1 MHz** | 980001.631439 µm² | 101.7342 / 16.7783 mW | 0.97 ns / **-0.18 ns VIOLATED** | 0.63 ns / **+0.34 ns MET** |
+
+这说明宏化后的矩阵状态/控制壳和 Q 读回路径已经可由 DC 直接观察，但 SS 的 SRAM
+输入 setup 仍未闭合；全局瓶颈仍在控制/B-feed。计算核 Liberty、vector/阵列物理核、
+floorplan/CTS/布线及寄生 STA 仍是 signoff 前置条件，不能把本轮数字写成整芯片 1 GHz
+收敛。
+
 当前 tt/ss 报告分别为
 `asic/dc/reports/synth_top_smic28_tt_025C_1v80_kvqd_pipe.rpt` 与
 `asic/dc/reports/synth_top_smic28_ss_100C_1v60_kvqd_pipe_ss.rpt`。tt top-10 包含 6 条
@@ -223,8 +245,9 @@ dynamic 91.339 mW、leakage 16.380 mW。该数字沿用 1 ns ideal-clock 综合�
 B-feed `clk` 30804 loads 的 high-fanout 估算告警，不能替代 CTS/布局后 STA。
 
 本轮功能验证：`pytest qsim/` **52 passed**；B' co-sim **3/3 PASS、0 ULP、trace/cycles 一致**；
-随机与全零 K/V 定向用例的 HBM 写回 196 bytes 均与 executor 字节级一致；quick 总验收
-**11 PASS / 0 FAIL / 2 SKIP**（quick 规定跳过 golden3/full co-sim，二者已另行验证）。
+随机与全零 K/V 定向用例的 HBM 写回 196 bytes 均与 executor 字节级一致；matrix 宏壳
+四模式定向测试全过；quick 总验收 **12 PASS / 0 FAIL / 2 SKIP**（quick 规定跳过
+golden3/full co-sim，B' co-sim 已另行验证 3/3）。
 
 **未闭合项（全部有明确下一步）**：
 
@@ -232,7 +255,7 @@ B-feed `clk` 30804 loads 的 high-fanout 估算告警，不能替代 CTS/布局�
 |---|---|---|
 | B' 4B/8B 重检 | D10 义务 | fold_verify 同口径复测；模型下载/显存前置核实 |
 | quant-pipeline signoff STA | tt/ss 全顶层综合已过，物理口径待闭合 | 补 CTS、互连寄生与布局后 STA，处理 B-feed 高扇出时钟 |
-| 引擎内部 RAM 宏例化 | 数据通路 28nm 重报已完成；全顶层 engine 仍为黑盒 | 为 matrix/vector engine 建物理宏边界与 SMIC28 RAM 实例，闭合接口时序 |
+| matrix/vector 计算核物理集成 | matrix 状态 RAM 已真宏化；128×128 array 与 vector core 仍为黑盒 | 生成/导入计算核 Liberty 与物理视图，补 vector 状态 RAM，再做 floorplan/CTS/布线 |
 | B' wall-clock 实测 | 兑现缺口 | qrun 端到端 vs 866 实测加速比 |
 | 指令发射墙 721,895 inst/token | 软墙 | 描述符内批量（无新指令） |
 | INT4 W4A16 质量 3/20 | 质量缺口 | per-64-group / 混合精度（排队） |
@@ -244,13 +267,15 @@ B-feed `clk` 30804 loads 的 high-fanout 估算告警，不能替代 CTS/布局�
 
 **Track 1 — 数值/质量闭环（P0）**：①B' 4B/8B 重检（D10）：fold_verify 同种子同样本复测 ΔPPL/交叉/负通道统计；门槛裁决（过→全家族结论；不过→B' 仅 0.6B 口径 + per-head 混合精度备用）。②8B 冻结口径重算（B' 对 8B 的增益重推，预期 <1.212×）。
 
-**Track 2 — Fmax 续攻（P1）**：①量化器路径 register-slice 与双角全顶层重综合 **已完成**（tt 636.9 MHz；ss 471.7 MHz）；②代表数据通路/BF16 MAC 的 SMIC28 tt/ss 重报 **已完成**（1 ns 探针全 MET），engine 内部 RAM 真宏例化仍待做；③补 CTS/互连寄生后的 signoff STA 口径。
+**Track 2 — Fmax 续攻（P1）**：①量化器路径 register-slice 与双角全顶层重综合 **已完成**（tt 636.9 MHz；ss 471.7 MHz）；②代表数据通路/BF16 MAC 的 SMIC28 tt/ss 重报 **已完成**（1 ns 探针全 MET）；③matrix 状态 RAM 的 9 宏物理壳与接口 timing **已完成**（Track 2.2b）；④计算核 Liberty + floorplan/CTS/互连寄生后的 signoff STA 待做。
 
 **Track 3 — 性能兑现（P2）**：①B' 端到端 wall-clock（窗口化+INT8-K 折叠+INT4-V+流式旋转全链路 20 token 实测 vs 866 基线的实际加速比 + 差距归因）；②指令发射墙松绑（描述符内批量）。
 
 **Track 4 — gen-2 预研（排队）**：NoC/QCore×N 草案（O7）、分页 KV、batch>1（O8）。
 
-**依赖顺序**：1.1 →（1.2、3.1）；2.1 → 2.2 → 2.3；3.2 可与 2.1 并行；Track 4 待稳定后评估。**每个立项必须走 subagent 评审循环至「评审一致，可执行」**（本仓库不可违背的工作纪律）。
+**依赖顺序**：1.1 →（1.2、3.1）；2.1 → 2.2a → 2.2b → 物理 signoff；3.2 可与
+2.1 并行；Track 4 待稳定后评估。**每个立项必须走 subagent 评审循环至「评审一致，
+可执行」**（本仓库不可违背的工作纪律）。
 
 ---
 
