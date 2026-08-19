@@ -74,8 +74,33 @@ module matrix_engine #(
   assign issue_scale_addr = ({4'b0, nn} * group_count) + kk[15:7];
   assign issue_fire       = mac_active && step;
 
+  // The CP presents the next MAC address combinationally from its counters.
+  // Capture that request before driving the SRAM pins.  Besides removing the
+  // long CP-to-macro setup path at the SS corner, this keeps the single-port
+  // macro request and its data metadata on the same local clock boundary.
+  logic        sram_req_valid;
+  logic [13:0] sram_req_idx;
+  logic [1:0]  sram_req_bank;
+  logic [11:0] sram_req_word_addr;
+  logic [11:0] sram_req_scale_addr;
+  logic [15:0] sram_req_kk;
+  logic [31:0] sram_req_a, sram_req_b;
+  logic [2:0]  sram_req_srcA, sram_req_srcB;
+  logic        sram_req_acc_init, sram_req_dequant, sram_req_final;
+
+  // Preload writes arrive from the CP's byte-assembly mux.  Register them
+  // too; otherwise the C-seed data pin can become the next SS-corner setup
+  // bottleneck after the MAC address slice is closed.
+  logic        cin_req_we, scale_req_we;
+  logic [13:0] cin_req_waddr;
+  logic [31:0] cin_req_wdata;
+  logic [11:0] scale_req_waddr;
+  logic [31:0] scale_req_wdata;
+
   // Read metadata.  Macro Q changes after the request edge; these registers
   // select the corresponding bank/data during the following compute cycle.
+  // `pipe_valid` is fed from the registered SRAM request, so the extra
+  // request-slice cycle remains aligned with the macro's synchronous Q.
   logic        pipe_valid;
   logic [13:0] pipe_idx;
   logic [1:0]  pipe_bank;
@@ -117,24 +142,24 @@ module matrix_engine #(
   generate
     for (bank = 0; bank < 4; bank = bank + 1) begin : g_state_bank
       localparam logic [1:0] BANK = bank;
-      wire ap_do_issue = issue_fire && (issue_bank == BANK);
+      wire ap_do_issue = sram_req_valid && (sram_req_bank == BANK);
       wire ap_do_write = pending_valid[bank] && !ap_do_issue;
       wire ap_do_cread = c_read_fire && (c_read_addr[1:0] == BANK);
-      wire cin_do_write = cin_we && (cin_waddr[1:0] == BANK);
-      wire cin_do_read  = issue_fire && (issue_bank == BANK);
+      wire cin_do_write = cin_req_we && (cin_req_waddr[1:0] == BANK);
+      wire cin_do_read  = sram_req_valid && (sram_req_bank == BANK);
 
       always_comb begin
         ap_write_fire[bank] = ap_do_write;
         ap_cen[bank] = ~(ap_do_write || ap_do_issue || ap_do_cread);
         ap_wen[bank] = ~ap_do_write;
         ap_addr[bank] = ap_do_write ? pending_word_addr[bank] :
-                        ap_do_issue ? issue_word_addr : c_read_addr[13:2];
+                        ap_do_issue ? sram_req_word_addr : c_read_addr[13:2];
         ap_d[bank] = pending_data[bank];
 
         cin_cen[bank] = ~(cin_do_write || cin_do_read);
         cin_wen[bank] = ~cin_do_write;
-        cin_addr[bank] = cin_do_write ? cin_waddr[13:2] : issue_word_addr;
-        cin_d[bank] = {32'b0, cin_wdata};
+        cin_addr[bank] = cin_do_write ? cin_req_waddr[13:2] : sram_req_word_addr;
+        cin_d[bank] = {32'b0, cin_req_wdata};
       end
 
       kh4096x64 u_acc_partial (
@@ -151,15 +176,15 @@ module matrix_engine #(
     end
   endgenerate
 
-  wire scale_do_write = scale_we;
-  wire scale_do_read  = issue_fire && !scale_we;
+  wire scale_do_write = scale_req_we;
+  wire scale_do_read  = sram_req_valid && !scale_req_we;
   wire scale_cen      = ~(scale_do_write || scale_do_read);
   wire scale_wen      = ~scale_do_write;
-  wire [11:0] scale_addr = scale_do_write ? scale_waddr : issue_scale_addr;
+  wire [11:0] scale_addr = scale_do_write ? scale_req_waddr : sram_req_scale_addr;
 
   kh4096x64 u_scale (
     .Q(scale_q), .CLK(clk), .CEN(scale_cen), .WEN(scale_wen),
-    .A(scale_addr), .D({32'b0, scale_wdata}), .EMA(SRAM_EMA),
+    .A(scale_addr), .D({32'b0, scale_req_wdata}), .EMA(SRAM_EMA),
     .EMAW(SRAM_EMAW), .EMAS(1'b0), .RET1N(1'b1)
   );
 
@@ -208,6 +233,9 @@ module matrix_engine #(
       mm <= 8'b0;
       nn <= 8'b0;
       mac_active <= 1'b0;
+      sram_req_valid <= 1'b0;
+      cin_req_we <= 1'b0;
+      scale_req_we <= 1'b0;
       pipe_valid <= 1'b0;
       pending_valid <= 4'b0;
       pending_final <= 4'b0;
@@ -220,6 +248,12 @@ module matrix_engine #(
       mm <= 8'b0;
       nn <= 8'b0;
       mac_active <= 1'b1;
+      sram_req_valid <= 1'b0;
+      // The final preload request captured on the preceding edge is consumed
+      // by the macro during this START edge; clear the registered pulse after
+      // that write so it cannot leak into the MAC phase.
+      cin_req_we <= cin_we;
+      scale_req_we <= scale_we;
       pipe_valid <= 1'b0;
       pending_valid <= 4'b0;
       pending_final <= 4'b0;
@@ -255,19 +289,52 @@ module matrix_engine #(
         pending_data[compute_out_bank] <= compute_next_word;
       end
 
-      pipe_valid <= issue_fire;
+      // Feed the compute boundary from the request that was presented to the
+      // SRAM on the preceding edge.  This is one cycle later than the CP
+      // request, matching the macro Q update and preserving one request/cycle
+      // throughput after the slice fills.
+      pipe_valid <= sram_req_valid;
+      if (sram_req_valid) begin
+        pipe_idx <= sram_req_idx;
+        pipe_bank <= sram_req_bank;
+        pipe_kk <= sram_req_kk;
+        pipe_a <= sram_req_a;
+        pipe_b <= sram_req_b;
+        pipe_srcA <= sram_req_srcA;
+        pipe_srcB <= sram_req_srcB;
+        pipe_acc_init <= sram_req_acc_init;
+        pipe_dequant <= sram_req_dequant;
+        pipe_final <= sram_req_final;
+      end
+
+      // Capture the current CP request for the next SRAM edge.  The existing
+      // issue counters still advance at one per `step`; this only inserts a
+      // local timing boundary in the physical implementation.
+      sram_req_valid <= issue_fire;
+      cin_req_we <= cin_we;
+      if (cin_we) begin
+        cin_req_waddr <= cin_waddr;
+        cin_req_wdata <= cin_wdata;
+      end
+      scale_req_we <= scale_we;
+      if (scale_we) begin
+        scale_req_waddr <= scale_waddr;
+        scale_req_wdata <= scale_wdata;
+      end
       if (issue_fire) begin
-        pipe_idx <= issue_idx;
-        pipe_bank <= issue_bank;
-        pipe_kk <= kk;
-        pipe_a <= a_slice[mm];
-        pipe_b <= b_slice[nn];
-        pipe_srcA <= srcA;
-        pipe_srcB <= srcB;
-        pipe_acc_init <= acc_init;
-        pipe_dequant <= dequant;
-        pipe_final <= (kk == K - 16'd1) &&
-                      (mm == M - 8'd1) && (nn == N - 8'd1);
+        sram_req_idx <= issue_idx;
+        sram_req_bank <= issue_bank;
+        sram_req_word_addr <= issue_word_addr;
+        sram_req_scale_addr <= issue_scale_addr;
+        sram_req_kk <= kk;
+        sram_req_a <= a_slice[mm];
+        sram_req_b <= b_slice[nn];
+        sram_req_srcA <= srcA;
+        sram_req_srcB <= srcB;
+        sram_req_acc_init <= acc_init;
+        sram_req_dequant <= dequant;
+        sram_req_final <= (kk == K - 16'd1) &&
+                          (mm == M - 8'd1) && (nn == N - 8'd1);
 
         if (nn == N - 8'd1) begin
           nn <= 8'b0;

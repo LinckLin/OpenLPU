@@ -4,8 +4,9 @@
 > OpenSTA 多 corner STA；SRAM 宏按公开密度上下界估算并单列占比。
 > 冻结快照：`rtl/ref/asicsnap/`（开工时打点；rtl/ 只读，P8 未改 rtl/ 源）。
 > D18 更新（2026-08-19）：代表数据通路与 BF16 MAC 已用 SMIC28 HDC30P140 RVT
-> 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；矩阵状态 RAM 已接入 9 个真宏；全系统
-> 算术核、CTS 与物理 signoff 另行列示。
+> 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；矩阵状态 RAM 已接入 9 个真宏，且
+> Track 2.3 已闭合双角 SRAM 输入/读回 scoped timing；全系统算术核、CTS 与物理
+> signoff 另行列示。
 
 ## 0. 结论速览
 
@@ -13,7 +14,7 @@
 |---|---|
 | elaboration | ✅ 通过（Verilator 4.038 原 RTL lint + Yosys 0.44 层级检查，见 §1） |
 | 逻辑综合 | ✅ 通过（8 项 FP 基元 → legacy sky130 与当前 SMIC28 门级网表，见 §2/§10.4） |
-| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前 SMIC28 控制平面 tt/ss 为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath` 与 `mac_bf16` 的 SMIC28 DC tt/ss 均在 1 ns 探针下 `MET`，arrival 0.98–0.99 ns（§10.4）；这是 pre-layout 局部闭合，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
+| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前含 matrix 真宏壳的 SMIC28 全顶层 tt/ss 探针为 689.7/518.1 MHz，最差路径均在 B-feed（§10.8.5）；Track 2.1 量化器流水化基线为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath` 与 `mac_bf16` 的 SMIC28 DC tt/ss 均在 1 ns 探针下 `MET`，arrival 0.98–0.99 ns（§10.4）；这些都是 pre-layout 探针，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
 | 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；legacy sky130 P10b：ALU top 0.0609 / mac_bf16 ≈0.0349 / mac_int8 ≈0.0053 mm²；SRAM 100.7–268.4 mm²为旧公开密度估算 |
 | token/s | 冻结 1 GHz 口径 960/675/469；SMIC28 代表数据通路已支持 1 GHz 综合探针，但系统频率仍受控制平面与后续物理实现限制，暂不改写端到端 token/s |
 
@@ -22,7 +23,7 @@
 > VCS-MX O-2018.09-SP2 功能仿真（27 用例与 Verilator 字节级一致）已交付；
 > **O6 全设计扩展：synth_top 在 DC 侧 elaborate + link + compile_ultra 全跑通**
 > （历史口径为控制平面 1.000 mm² / Fmax 136 MHz；Track 2.2b 已将矩阵状态 RAM 从
-> 整模块黑盒推进为 9 个真 SRAM + 可综合控制壳，§10.8）。
+> 整模块黑盒推进为 9 个真 SRAM + 可综合控制壳，Track 2.3 又闭合其输入时序，§10.8）。
 > DC 运行需 license 27000@bics109，VCS 需 snps-centos7 兼容命名空间（详见 §10/§11 与 README）。
 
 ## 1. Elaboration（验收项 1）
@@ -295,7 +296,8 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 > legacy sky130 结果与 OpenSTA 同口径交叉验证；
 > **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
 > 控制平面真综合，§10.5）；Track 2.2b 进一步综合矩阵状态/控制壳并链接 9 个真 SRAM，
-> 128×128 算术核与 vector core 仍保留物理宏边界（§10.8）。
+> Track 2.3 闭合其双角输入/读回 scoped timing；128×128 算术核与 vector core 仍保留
+> 物理宏边界（§10.8）。
 
 ### 10.1 工具与 license（步骤 1）
 
@@ -550,7 +552,7 @@ vector 数字核，以及 CTS/提取互连寄生后的整芯片 signoff。
 > Delay Optimization 并产出最终 report_timing（上表即最终值，非观测值）。rope 锥 68.11 ns
 > sky130 → 流水化后非瓶颈的降路径结论不受收敛耗时影响。
 
-### 10.8 矩阵状态 SRAM 真宏例化（Track 2.2b）
+### 10.8 矩阵状态 SRAM 真宏例化与输入切片（Track 2.2b/2.3）
 
 Track 2.2a 已证明代表 BF16/INT8 基元在 SMIC28 1 ns 综合探针下可闭合，但 §10.5 的
 `matrix_engine` 仍是整模块黑盒，既看不到内部状态 RAM 面积，也无法检查 SRAM 接口。
@@ -618,6 +620,36 @@ B-feed。矩阵宏读出 Q 在两角均满足 1 ns 探针，但 SS 从控制逻�
 和真实 SRAM 接口，不代表 128×128 阵列内部时序/面积，更不能宣称整芯片 1 GHz signoff。
 阵列代表 BF16/INT8 基元的独立 1 ns 探针见 §10.4；下一物理阶段仍需计算核 Liberty、
 floorplan/CTS/布线与提取寄生 STA。
+
+#### 10.8.5 Track 2.3 本地请求/预载寄存切片
+
+Track 2.2b 的 SS 输入违例来自 CP 组合计数/地址逻辑直接驱动 SRAM 输入。物理壳
+`asic/matrix_engine_sram.sv` 现加入本地 MAC 请求寄存切片，地址、bank、scale 地址与
+计算 metadata 在同一边界捕获；同步宏 Q 返回后，再把对应 metadata 送入 compute pipe。
+切片填满后仍保持每周期一个请求。首次切片综合消除 MAC 地址长路径后，C seed 预载数据
+输入成为新的 SS 临界路径，因此 C seed 与 scale 写请求也在宏前增加一拍寄存。
+
+功能协议保持不变：START 边沿仍消费上一拍捕获的最后一个预载写脉冲，随后清除脉冲，
+不会泄漏进 MAC 阶段。四个定向用例继续 bit-exact PASS，并覆盖 4-cycle 同 bank 冲突、
+writeback queue 与首元素预取；`pytest qsim/` 为 52 passed，B' co-sim 3/3 PASS、0 ULP，
+`run_all_acceptance.sh --quick` 为 12 PASS / 0 FAIL / 2 SKIP。
+
+正式报告由当前源重新运行 `python3 asic/dc/hoist_dc.py` 后再执行双角
+`compile_ultra` 生成；也可使用会自动执行该步骤的 `asic/dc/run_dc.sh`。最终报告为：
+
+- `asic/dc/reports/synth_top_smic28_tt_025C_1v80_mxram_slice_wreg.rpt`
+- `asic/dc/reports/synth_top_smic28_ss_100C_1v60_mxram_slice_wreg.rpt`
+
+| corner | 全局最差路径（data arrival / slack） | Fmax probe | total cell area | 逻辑/非宏面积 | macro/black-box area | dynamic / leakage | 矩阵 SRAM 输入 scoped | 矩阵 Q 读 scoped |
+|---|---|---:|---:|---:|---:|---|---|---|
+| `tt_025C_1v80` | B-feed `s_n2phi_reg[1][24] → s_r1_reg[1][16]`，1.45 ns / **-0.46 ns** | **689.7 MHz** | 978056.723348 µm² | 190929.971639 µm² | 787126.751709 µm² | 121.4191 / 2.1162 mW | 0.25 ns / **+0.57 ns MET** | 0.48 ns / **+0.50 ns MET** |
+| `ss_100C_1v60` | B-feed `s_ang2_reg[3][25] → s_r1_reg[3][22]`，1.93 ns / **-0.95 ns** | **518.1 MHz** | 979851.887415 µm² | 192725.135706 µm² | 787126.751709 µm² | 102.0429 / 16.7331 mW | 0.41 ns / **+0.40 ns MET** | 0.63 ns / **+0.34 ns MET** |
+
+相对 Track 2.2b，SS 矩阵 SRAM 输入 slack 从 **-0.18 ns** 提升到 **+0.40 ns**，
+TT 输入裕量也从 +0.01 ns 提升到 +0.57 ns；两角 top-10 scoped 输入与 Q 路径全部
+`MET`。这只闭合了当前真 SRAM 接口的 pre-layout 局部目标。全局 B-feed 仍违例，且报告
+仍不含 `matrix_compute_core` Liberty、CTS、布局布线与提取寄生，不能据此宣称全芯片
+1 GHz signoff。
 
 ## 11. VCS 功能仿真（VCS-MX O-2018.09-SP2，P10 §11）
 
