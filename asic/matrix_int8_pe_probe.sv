@@ -46,6 +46,7 @@ module matrix_int8_pe_probe (
   matrix_int8_pe u_pe (
     .clk(clk), .rst_n(rst_n),
     .weight_we(weight_we),
+    .weight_bank_sel(1'b0), .active_bank_sel(1'b0),
     .weight0_in(weight0_in), .weight1_in(weight1_in),
     .in_valid(launch_valid),
     .act0_west(launch_act0), .act1_west(launch_act1),

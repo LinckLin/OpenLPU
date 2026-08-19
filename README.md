@@ -70,7 +70,9 @@ plans/         各节点计划与评审记录
 > INT4 W4A16 数据通路达成、部署质量 3/20 未达硬门槛——per-64-group/混合精度归 backlog，
 > 见 `docs/p4/quant-error-report.md`）、`docs/p10/asic-report.md`（当前 SMIC28 代表数据
 > 通路闭合 1 ns 综合探针，矩阵状态 RAM 已真宏例化，dual-MAC INT8 PE 已通过 TT/SS
-> 1.0/0.9 ns 映射，16×16 tile 已有 TT/SS 1 ns pre-layout 证据；完整阵列、整芯片 CTS/寄生 signoff 尚未闭合。sky130
+> 1.0/0.9 ns 映射，16×16 tile 已有 TT/SS 1 ns pre-layout 证据；128×128（8×8 tile）阵列
+> 已有 32,768 MAC/cycle 与 256-cycle fill/drain 的结构功能证据，但完整阵列 DC/Liberty、
+> 整芯片 CTS/寄生 signoff 尚未闭合。sky130
 > P10b 129 MHz 结果作为 legacy 保留）。
 
 ## Synopsys 工具复现注（DC/VCS）
@@ -144,7 +146,7 @@ python3 -m qrun /tmp/qwen3-0.6b.qbin --prompt "Explain attention" --max-new 20
 | **runtime 运行时** | `qrun/` | `python3 -m qrun <qbin> --prompt "..."` | `python3 qrun/m4.py` | `docs/p5/m4-report.md`、`docs/p5/fullproggen.md` |
 | **RTL** | `rtl/` | `cd rtl/tb && verilator --cc --exe --build ...`（见 `docs/p7`） | `python3 rtl/tb/run_cosim.py` | `docs/p7/rtl-report.md` |
 | **FPGA** | `fpga/` | `cd fpga/tb && verilator --cc --exe --build ...`（见 `docs/p9`） | `python3 fpga/tb/run_fpga_smoke.py` | `docs/p9/porting.md`、`docs/p9/board-candidates.md` |
-| **ASIC** | `asic/` | `DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_top` | `bash asic/run_matrix_sram_check.sh` + `bash asic/run_synth.sh tt_025C_1v80` + `bash asic/run_mac_synth.sh tt_025C_1v80` | `docs/p10/asic-report.md` |
+| **ASIC** | `asic/` | `DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_top` | `bash asic/run_matrix_sram_check.sh` + `bash asic/run_matrix_int8_pe_array_check.sh` + `VERILATOR_JOBS=32 bash asic/run_matrix_int8_pe_array_full_check.sh` | `docs/p10/asic-report.md` |
 | **一键验收** | 仓库根 | `bash run_all_acceptance.sh`（`--quick` 快速 / `--full` 含 m4 全量） | `bash run_all_acceptance.sh`（八组件逐条，见 `docs/reproduction.md` §0） | `docs/reproduction.md` §0 |
 
 ## 从零复现

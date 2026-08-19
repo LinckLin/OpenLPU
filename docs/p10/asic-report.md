@@ -6,9 +6,10 @@
 > D18 更新（2026-08-19）：代表数据通路与 BF16 MAC 已用 SMIC28 HDC30P140 RVT
 > 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；矩阵状态 RAM 已接入 9 个真宏，且
 > Track 2.3 已闭合双角 SRAM 输入/读回 scoped timing；Track 2.4a 已交付单拍 dual-MAC
-> INT8 PE 及 TT/SS 1.0/0.9 ns 映射证据。16×16 tile、完整 128×128 阵列、CTS 与物理
-> Track 2.4b 已交付 16×16 结构 tile 及 TT/SS 1 ns 映射证据；64-tile 完整阵列、CTS 与
-> 物理 signoff 仍另行列示。
+> INT8 PE 及 TT/SS 1.0/0.9 ns 映射证据。Track 2.4b 已交付 16×16 结构 tile 及 TT/SS
+> 1 ns 映射证据；Track 2.4c 已完成 64-tile
+> 结构 RTL 与 full-wave scoreboard（32,768 MAC/cycle、256-cycle fill/drain），但完整阵列
+> DC/Liberty、CTS 与物理 signoff 仍另行列示。
 
 ## 0. 结论速览
 
@@ -16,8 +17,8 @@
 |---|---|
 | elaboration | ✅ 通过（Verilator 4.038 原 RTL lint + Yosys 0.44 层级检查，见 §1） |
 | 逻辑综合 | ✅ 通过（8 项 FP 基元 → legacy sky130 与当前 SMIC28 门级网表，见 §2/§10.4） |
-| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前含 matrix 真宏壳的 SMIC28 全顶层 tt/ss 探针为 689.7/518.1 MHz，最差路径均在 B-feed（§10.8.5）；Track 2.1 量化器流水化基线为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath`、`mac_bf16`、dual-MAC PE 与 16×16 tile 的 SMIC28 DC tt/ss 1 ns 探针均 `MET`，但 PE/tile 的最差 slack 仅显示 +0.00 ns（§10.9/§10.10），且 tile 时钟约 17,465 loads 仍使用 fanout=1000 wire-load 估算。这些都是 pre-layout 探针，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
-| 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；dual-MAC PE 本体 0.000560/0.000631 mm²；16×16 tile `u_tile` 0.143262/0.158331 mm²，64-tile cell-area 下限 9.169/10.133 mm²（均不含布线/CTS/SRAM/后处理）；legacy sky130 P10b 与旧公开 SRAM 密度估算保留为历史口径 |
+| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前含 matrix 真宏壳的 SMIC28 全顶层 tt/ss 探针为 689.7/518.1 MHz，最差路径均在 B-feed（§10.8.5）；Track 2.1 量化器流水化基线为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath`、`mac_bf16`、dual-MAC PE 与 16×16 tile 的 SMIC28 DC tt/ss 1 ns 探针均 `MET`，但 PE/tile 的最差 slack 仅显示 +0.00 ns（§10.9/§10.10），且 tile 时钟约 17,465 loads 仍使用 fanout=1000 wire-load 估算。Track 2.4c 的 64-tile 阵列目前只有结构 RTL/功能证据，尚无阵列 DC/Liberty、CTS 或寄生 STA。这些都是 pre-layout 探针，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
+| 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；dual-MAC PE 本体 0.000560/0.000631 mm²；16×16 tile `u_tile` 0.143262/0.158331 mm²，64-tile cell-area 下限 9.169/10.133 mm²（仅 tile 复制下界，不是 Track 2.4c 阵列 PPA；均不含布线/CTS/SRAM/后处理）；legacy sky130 P10b 与旧公开 SRAM 密度估算保留为历史口径 |
 | token/s | 冻结 1 GHz 口径 960/675/469；SMIC28 代表数据通路已支持 1 GHz 综合探针，但系统频率仍受控制平面与后续物理实现限制，暂不改写端到端 token/s |
 
 
@@ -299,8 +300,9 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 > **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
 > 控制平面真综合，§10.5）；Track 2.2b 进一步综合矩阵状态/控制壳并链接 9 个真 SRAM，
 > Track 2.3 闭合其双角输入/读回 scoped timing；Track 2.4a 已真综合 dual-MAC PE，
-> Track 2.4b 已真综合 16×16 结构 tile，但 64-tile 完整 128×128 算术核尚未接入全顶层，
-> matrix/vector core 仍保留物理宏边界（§10.8–§10.10）。
+> Track 2.4b 已真综合 16×16 结构 tile，Track 2.4c 已完成 64-tile 完整 128×128 结构 RTL，
+> 但阵列尚未接入全顶层或生成物理视图；matrix/vector core 仍保留物理宏边界
+>（§10.8–§10.11）。
 
 ### 10.1 工具与 license（步骤 1）
 
@@ -753,9 +755,51 @@ DC_TECH=smic28 DC_LABEL=tile1c \
 bash asic/run_matrix_int8_pe_tile_gate_check.sh
 ```
 
-下一阶段是 Track 2.4c：例化 64 个 tile，验证 32,768 INT8 MAC/cycle 与 256-cycle
-fill/drain，加入 PF 双缓冲权重和 DC lane 重构网络；在此之前不能把 tile probe 报告称为
-完整阵列 Liberty 或 signoff STA。
+Track 2.4c 已完成结构 RTL 与功能验证；完整阵列 Liberty、CTS 或 signoff STA 仍未交付。
+详见下一节 §10.11。
+
+### 10.11 Matrix 128×128 8×8 tile grid（Track 2.4c）
+
+本节点把 `matrix_int8_pe_tile` 结构化例化为默认 8×8 grid，即 64 个 16×16 tile、
+16,384 个 dual-MAC PE。阵列边界保持 PF 的 west activation / north partial-sum wavefront
+契约；tile 之间每 hop 仍为一拍，最后一列/最后一行输出显式 flatten 到 128-wide 边界。
+阵列还加入两项调度结构：
+
+1. **PF 双 weight bank**：一整行同时写入 128 个列位置，两路 INT8 共 **256 B/cycle**；
+   每个 32 KiB bank 需要 128 row-cycle，inactive bank 可在 active wave 期间刷新；
+   最长 hop drain counter 阻止在途 wave 中切换，排空后 `weight_commit` 才更新 active bank；
+2. **DC lane reconstruction**：输入 batch 经过按全局 row 延迟的结构管线，重建成与 PF
+   相同的 128-row boundary wave。MODE 请求变化时插入 **300-cycle** invalid barrier，
+   并清空重构管线，避免旧模式数据穿越；切换必须在命令边界发起，barrier 内输出不提交。
+
+#### 10.11.1 功能证据
+
+| 试验 | 结果 | 覆盖 |
+|---|---:|---|
+| 2×2 tile-grid Verilator | **8,960 checks / 0 failure** | 双 bank、inactive-bank overlap load、PF/DC wave、300-cycle MODE barrier |
+| 完整 8×8 grid registered-boundary Verilator | **197,635 checks / 0 failure** | 128×128 PE、256 个 back-to-back PF wave、全边界 payload/psum |
+| 完整 grid 峰值活动量 | **16,384 PE = 32,768 INT8 MAC/cycle** | dual-MAC 吞吐契约 |
+| wave 0 最后输出槽 | **256 cycles** | 128 列 + 128 行 fill/drain |
+
+复现命令：
+
+```bash
+bash asic/run_matrix_int8_pe_array_check.sh
+VERILATOR_JOBS=32 bash asic/run_matrix_int8_pe_array_full_check.sh
+verilator --lint-only -Wall -Wno-fatal -Wno-WIDTH -Wno-WIDTHCONCAT -Wno-UNUSED \
+  --top-module matrix_int8_pe_array_probe -Iasic \
+  asic/matrix_int8_pe_array_probe.sv
+```
+
+#### 10.11.2 物理边界与未闭合项
+
+`asic/dc/dc_flow.tcl` 和 `run_dc.sh` 已加入 `matrix_int8_pe_array` 入口，且 flow 会尝试
+保留 tile hierarchy；本轮**没有**把默认 64-tile 结构送入 `compile_ultra`，也没有生成
+可用于签核的阵列 Liberty/LEF。packed DC reconstruction pipeline 在 128-row 默认参数下
+会展开大规模寄存器与选择网络，当前只作为结构 probe，不能用来宣称面积、频率或功耗。
+下一轮物理工作应先把它重构为分 lane/分 tile 的局部 FIFO/register slice，再导入真实
+32 KiB 权重 SRAM、tile boundary、后处理、floorplan、CTS、布线和寄生 STA。已有 tile 的
+理想时钟 `MET` 与 64-tile 复制面积下界仍只作预算参考，不是阵列 signoff。
 
 ## 11. VCS 功能仿真（VCS-MX O-2018.09-SP2，P10 §11）
 

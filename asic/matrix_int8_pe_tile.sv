@@ -10,14 +10,21 @@
 
 `include "matrix_int8_pe.sv"
 
-module matrix_int8_pe_tile (
+module matrix_int8_pe_tile #(
+  parameter integer WEIGHT_BANKS = 1
+) (
   input  logic         clk,
   input  logic         rst_n,
   input  logic         weight_we,
+  input  logic         weight_row_we,
+  input  logic         weight_bank_sel,
+  input  logic         active_bank_sel,
   input  logic [3:0]   weight_row,
   input  logic [3:0]   weight_col,
   input  logic [7:0]   weight0_in,
   input  logic [7:0]   weight1_in,
+  input  logic [127:0] weight0_row_in,
+  input  logic [127:0] weight1_row_in,
   input  logic [15:0]  act_valid_west,
   input  logic [127:0] act0_west,
   input  logic [127:0] act1_west,
@@ -48,6 +55,8 @@ module matrix_int8_pe_tile (
         logic [7:0] pe_act1_west;
         logic [31:0] pe_psum_north;
         logic       pe_weight_we;
+        logic [7:0] pe_weight0_in;
+        logic [7:0] pe_weight1_in;
         logic       pe_act_valid_east;
         logic [7:0] pe_act0_east;
         logic [7:0] pe_act1_east;
@@ -74,15 +83,22 @@ module matrix_int8_pe_tile (
 
         // A single addressed write fans out through the row/column decoder;
         // compute and weight-load phases remain mutually exclusive.
-        assign pe_weight_we = weight_we && (weight_row == r) &&
-                              (weight_col == c);
+        assign pe_weight_we =
+            (weight_we && (weight_row == r) && (weight_col == c)) ||
+            (weight_row_we && (weight_row == r));
+        assign pe_weight0_in = weight_row_we ?
+            weight0_row_in[c*8 +: 8] : weight0_in;
+        assign pe_weight1_in = weight_row_we ?
+            weight1_row_in[c*8 +: 8] : weight1_in;
 
-        matrix_int8_pe u_pe (
+        matrix_int8_pe #(.WEIGHT_BANKS(WEIGHT_BANKS)) u_pe (
           .clk(clk),
           .rst_n(rst_n),
           .weight_we(pe_weight_we),
-          .weight0_in(weight0_in),
-          .weight1_in(weight1_in),
+          .weight_bank_sel(weight_bank_sel),
+          .active_bank_sel(active_bank_sel),
+          .weight0_in(pe_weight0_in),
+          .weight1_in(pe_weight1_in),
           .in_valid(pe_in_valid),
           .act0_west(pe_act0_west),
           .act1_west(pe_act1_west),
@@ -131,8 +147,12 @@ module matrix_int8_pe_tile (
   // prevents a caller from changing one PE's weights under an active wavefront.
   // synopsys translate_off
   always_ff @(posedge clk) begin
-    if (rst_n && weight_we && (|act_valid_west || |psum_valid_north))
+    if (rst_n && (weight_we || weight_row_we) &&
+        ((WEIGHT_BANKS == 1) || (weight_bank_sel == active_bank_sel)) &&
+        (|act_valid_west || |psum_valid_north))
       $error("matrix_int8_pe_tile weight load overlaps boundary wavefront");
+    if (rst_n && weight_we && weight_row_we)
+      $error("matrix_int8_pe_tile scalar and row weight writes overlap");
   end
   // synopsys translate_on
 endmodule

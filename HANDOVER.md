@@ -11,8 +11,8 @@
 |---|---|
 | 项目 | **QCore**——LLM 推理个人级加速平台：Hugging Face Qwen 一键编译部署到自有编译器 / ISA / 模拟器 / Runtime / RTL / ASIC |
 | 开源仓库 | `github.com/LinckLin/OpenLPU`（origin `git@github.com:LinckLin/OpenLPU.git`，分支 `main`） |
-| 前序基线 HEAD | `6329bc2`（Track 2.4a 已推送；本文件记录后续 Track 2.4b 增量） |
-| 状态一句话 | 全栈功能闭环 + 开源 + 0.6B 全路径与 HF 逐位一致；ASIC 已切 SMIC28（28nm）基线：含 matrix 真宏壳的当前全顶层 tt/ss 探针为 **689.7/518.1 MHz**，最差路径均在 B-feed；matrix 状态 9 个真 SRAM 的 TT/SS 输入与 Q 读回 scoped timing 全部 MET；Track 2.4a 已交付精确单拍 dual-MAC INT8 PE，Track 2.4b 已交付 16×16 结构 tile（TT/SS 1 ns arrival **0.98/0.97 ns**，均显示 **+0.00 ns MET**）；64-tile 完整阵列、算术核 Liberty 与整芯片 CTS/寄生 signoff 尚未完成 |
+| 本阶段父提交 | `3cd6910`（Track 2.4b 已推送；本文件记录其后的 Track 2.4c 增量） |
+| 状态一句话 | 全栈功能闭环 + 开源 + 0.6B 全路径与 HF 逐位一致；ASIC 已切 SMIC28（28nm）基线：含 matrix 真宏壳的当前全顶层 tt/ss 探针为 **689.7/518.1 MHz**，最差路径均在 B-feed；matrix 状态 9 个真 SRAM 的 TT/SS 输入与 Q 读回 scoped timing 全部 MET；Track 2.4a 已交付精确单拍 dual-MAC INT8 PE，Track 2.4b 已交付 16×16 结构 tile（TT/SS 1 ns arrival **0.98/0.97 ns**，均显示 **+0.00 ns MET**）；Track 2.4c 已完成 64-tile 结构 RTL，full scoreboard 证明 **32,768 MAC/cycle、256-cycle fill/drain**，但阵列 DC/Liberty、算术核物理集成与整芯片 CTS/寄生 signoff 尚未完成 |
 | 工作纪律 | **任何新计划必须先经 subagent 评审循环至「评审一致，可执行」再执行**；数字必须引用冻结规格原值；验收不过留在当前节点；新范围只登记 backlog |
 
 ---
@@ -71,6 +71,7 @@ qforge 编译器前端（QNN IR → qbin 141 张量） → Q-MLIR pass（qnn→q
 | **INT4 W4A16** | 三端数据通路 + 打包位序锁定；部署质量 3/20 未达（AWQ 回退仍 3/20） | ⚠️ 如实收尾，per-64-group 归 backlog |
 | **W1** | 开源打包：README/LICENSE(Apache-2.0)/reproduction/zhihu-outline；run_all_acceptance.sh | ✅ |
 | **性能路线** | 三路调研（旋转量化/KV 离群/投机解码）→ DECISION（3 轮审计）→ 三门槛实测 → B' 立项落地 → SMIC28 宏化 → 锥流水化 + 工艺重立 | ✅ 详见 §3 |
+| **Track 2.4c** | 8×8 `matrix_int8_pe_tile` grid（64 tiles / 16,384 dual-MAC PE）、PF 双 bank、DC row reconstruction、full PF scoreboard | ✅ 结构功能闭合；物理 signoff 继续排队 |
 
 ---
 
@@ -95,6 +96,7 @@ qforge 编译器前端（QNN IR → qbin 141 张量） → Q-MLIR pass（qnn→q
 | matrix SRAM 输入切片（Track 2.3） | MAC 请求/metadata 与 C seed/scale 预载写在宏前本地寄存；保持填充后 1 request/cycle；SS 输入 slack **-0.18→+0.40 ns**，TT/SS 输入与 Q top-10 全 MET | ✅ 四模式定向测试、52 pytest、B' 3/3 与 quick 12/0/2；双角 compile_ultra 完成 |
 | matrix dual-MAC PE（Track 2.4a） | 两路 signed INT8 乘法 + INT32 模 2^32 累加，激活向东/psum 向南均一拍；1.0 ns TT/SS PE 面积 **560.462/631.414 µm²**，0.9 ns 映射面积代价 +3.53%/+9.47% | ✅ 核心 65,544、probe 964、TT 门级 1,928 checks 全部 0 failure；1.0/0.9 ns 双角 compile_ultra 均 MET |
 | matrix 16×16 结构 tile（Track 2.4b） | 256 个 PE；west/north 独立 skew、(row,col) 权重寻址、每 hop 一拍；`u_tile` cell area **143261.986/158331.250 µm²**（TT/SS） | ✅ RTL 2,720、TT 门级 1,168 checks 全部 0 failure；TT/SS 1 ns compile_ultra 均 MET；clk 17,465 loads 风险已登记 |
+| matrix 128×128 8×8 tile grid（Track 2.4c） | 64 tiles / 16,384 dual-MAC PE；PF 行宽权重双 bank（256 B/cycle）、DC row reconstruction、300-cycle MODE barrier | ✅ 2×2 **8,960** 与 full **197,635** checks 全部 0 failure；峰值 **32,768 MAC/cycle**、fill/drain **256 cycles**；尚无阵列 PPA/signoff |
 | D18 工艺切换 | ASIC 基线 = SMIC28（28HKCP HDC30P140 RVT + SMIC28 宏）；sky130 全流程保留为 legacy | ✅ |
 
 ### 3.3 关键未兑现（如实）
@@ -226,6 +228,7 @@ cd rtl/tb && verilator --cc --exe --build -j 16 -O2 -Wno-fatal -Wno-WIDTH \
 | mac_bf16（SMIC28） | **0.99 ns，1 ns MET** | **0.98 ns，1 ns MET** | tt：mul 中间级；ss：add 尾级；面积 0.001906/0.001961 mm² |
 | matrix dual-MAC PE（Track 2.4a） | **0.98 ns / +0.00 ns MET** | **0.97 ns / +0.00 ns MET** | registered-boundary probe；PE 本体面积 560.462/631.414 µm²；0.9 ns 加强映射也 MET（0.87 ns arrival） |
 | matrix 16×16 tile（Track 2.4b） | **0.98 ns / +0.00 ns MET** | **0.97 ns / +0.00 ns MET** | `u_tile` area 0.143262/0.158331 mm²；total probe 0.145041/0.160111 mm²；17,465 sequential cells；clk 17,465 loads，仍是 wire-load 探针 |
+| matrix 128×128 array（Track 2.4c） | 未跑阵列 DC | 未跑阵列 DC | 结构 RTL：64 tiles、16,384 PE、双 bank 256 B/cycle；full scoreboard 197,635/0；仅作功能吞吐证据 |
 | rope post-pipeline（上一对照） | 4.59 ns → **217.9 MHz** | 6.08 ns → **164.5 MHz** | kv_quantdequant：`s_bits_reg[5]/[1]→hbm_wdata[0]`；面积 0.272/0.273 mm² |
 | pre-pipeline（对照） | 8.59 ns → 116.4 MHz | 11.49 ns → 87.0 MHz | rope_sincos 锥 8.56/11.43 ns 紧随 |
 | legacy（sky130 逻辑 + SMIC28 宏，跨工艺可达性口径） | 14.7 MHz（68.11 ns） | 未跑 | 历史参考 |
@@ -280,8 +283,27 @@ RTL wavefront scoreboard **2,720 checks / 0 failure**，TT 映射网表 Icarus s
 
 按 64 个 tile 直接复制 `u_tile` cell area 的标准单元下限为 TT/SS **9.1688/10.1332 mm²**；
 包含 probe 则为 **9.2826/10.2471 mm²**。这些数字不含 tile 边界寄存、8×8 权重/valid
-分发、时钟树、SRAM、后处理、拥塞和寄生。Track 2.4c 必须先完成 64-tile 结构与
-32,768 MAC/cycle、256-cycle fill/drain scoreboard，再生成可供物理工具使用的阵列模型。
+分发、时钟树、SRAM、后处理、拥塞和寄生。Track 2.4c 已先完成 64-tile 结构与
+32,768 MAC/cycle、256-cycle fill/drain scoreboard，下一步才是生成可供物理工具使用的
+阵列模型。
+
+Track 2.4c 已完成结构实现：`asic/matrix_int8_pe_array.sv` 默认例化 8×8 个 tile，
+通过整行端口每周期写入 128 列的两路 INT8 权重（**256 B/cycle**），每个 32 KiB bank
+用 128 row-cycle 装满；双 bank 的 inactive bank 可在 active wave 期间刷新，最长 hop
+drain counter 会拒绝在途 wave 中的 `weight_commit`，排空后才允许切换。DC 输入先经过按
+global row 延迟的 packed reconstruction pipeline，
+以同一 128-row boundary 供 PF/DC 两模式，MODE 请求变化插入 **300 cycles** 的 invalid
+barrier；调用方必须在命令边界发起切换，barrier 内输出不提交。
+
+验证证据：2×2 grid **8,960 checks / 0 failure**；默认 8×8 registered-boundary full run
+**197,635 checks / 0 failure**，覆盖 256 个背靠背 PF wave，最大活动 16,384 PE，即
+**32,768 INT8 MAC/cycle**，wave 0 最后输出槽为 **256 cycles**。`verilator --lint-only`
+（参数化与默认 probe）和 `python3 asic/dc/desugar_dc.py` 均通过。
+
+本节点没有运行完整 64-tile `compile_ultra`，也没有阵列 Liberty/LEF、CTS、布线或寄生
+STA。packed DC reconstruction 在 full 参数下会展开很大的寄存器/选择网络，暂时只作为
+结构 probe；后续物理实现应改为分 lane/分 tile 的 FIFO 或 register slice，再做 floorplan
+与时钟分区。**不能用 tile 复制面积、ideal-clock MET 或结构吞吐数字冒充阵列 PPA/signoff。**
 
 Track 2.4b 报告文件：
 
@@ -310,7 +332,7 @@ golden3/full co-sim，B' co-sim 已另行验证 3/3）。
 |---|---|---|
 | B' 4B/8B 重检 | D10 义务 | fold_verify 同口径复测；模型下载/显存前置核实 |
 | quant-pipeline signoff STA | tt/ss 全顶层综合已过，物理口径待闭合 | 补 CTS、互连寄生与布局后 STA，处理 B-feed 高扇出时钟 |
-| matrix/vector 计算核物理集成 | matrix 状态 RAM 已真宏化且 TT/SS 输入/Q scoped timing 全 MET；dual-MAC PE 与 16×16 tile 已完成，64-tile array 与 vector core 仍为黑盒 | Track 2.4c 例化 64 个 tile，验证 PF/DC 数据流和 256-cycle fill/drain，再生成计算核 Liberty/物理视图并做 floorplan/CTS/布线 |
+| matrix/vector 计算核物理集成 | matrix 状态 RAM 已真宏化且 TT/SS 输入/Q scoped timing 全 MET；dual-MAC PE、16×16 tile 与 64-tile array 结构 RTL 已完成，阵列仍无物理签核 | 先把 DC lane reconstruction 改成可布局的分 lane/register-slice 结构，再接 32 KiB 权重 SRAM、后处理、floorplan/CTS/布线/寄生 STA |
 | B' wall-clock 实测 | 兑现缺口 | qrun 端到端 vs 866 实测加速比 |
 | 指令发射墙 721,895 inst/token | 软墙 | 描述符内批量（无新指令） |
 | INT4 W4A16 质量 3/20 | 质量缺口 | per-64-group / 混合精度（排队） |
@@ -322,7 +344,7 @@ golden3/full co-sim，B' co-sim 已另行验证 3/3）。
 
 **Track 1 — 数值/质量闭环（P0）**：①B' 4B/8B 重检（D10）：fold_verify 同种子同样本复测 ΔPPL/交叉/负通道统计；门槛裁决（过→全家族结论；不过→B' 仅 0.6B 口径 + per-head 混合精度备用）。②8B 冻结口径重算（B' 对 8B 的增益重推，预期 <1.212×）。
 
-**Track 2 — Fmax 续攻（P1）**：①量化器路径 register-slice 与双角全顶层重综合 **已完成**（tt 636.9 MHz；ss 471.7 MHz）；②代表数据通路/BF16 MAC 的 SMIC28 tt/ss 重报 **已完成**（1 ns 探针全 MET）；③matrix 状态 RAM 的 9 宏物理壳 **已完成**（Track 2.2b）；④matrix SRAM 请求/预载寄存切片与双角输入/Q timing 闭合 **已完成**（Track 2.3）；⑤单拍 dual-MAC INT8 PE 与 1.0/0.9 ns 双角映射 **已完成**（Track 2.4a）；⑥16×16 结构 tile 与 TT/SS 分层综合 **已完成**（Track 2.4b）；⑦下一步例化 64-tile 完整阵列（Track 2.4c），再生成计算核 Liberty 并进入 floorplan/CTS/互连寄生 signoff。
+**Track 2 — Fmax 续攻（P1）**：①量化器路径 register-slice 与双角全顶层重综合 **已完成**（tt 636.9 MHz；ss 471.7 MHz）；②代表数据通路/BF16 MAC 的 SMIC28 tt/ss 重报 **已完成**（1 ns 探针全 MET）；③matrix 状态 RAM 的 9 宏物理壳 **已完成**（Track 2.2b）；④matrix SRAM 请求/预载寄存切片与双角输入/Q timing 闭合 **已完成**（Track 2.3）；⑤单拍 dual-MAC INT8 PE 与 1.0/0.9 ns 双角映射 **已完成**（Track 2.4a）；⑥16×16 结构 tile 与 TT/SS 分层综合 **已完成**（Track 2.4b）；⑦64-tile 完整阵列的结构 RTL、PF/DC scoreboard **已完成**（Track 2.4c）；⑧下一步重构 lane 网络并生成计算核 Liberty，再进入 floorplan/CTS/互连寄生 signoff。
 
 **Track 3 — 性能兑现（P2）**：①B' 端到端 wall-clock（窗口化+INT8-K 折叠+INT4-V+流式旋转全链路 20 token 实测 vs 866 基线的实际加速比 + 差距归因）；②指令发射墙松绑（描述符内批量）。
 
@@ -337,7 +359,7 @@ golden3/full co-sim，B' co-sim 已另行验证 3/3）。
 ## 11. 文档索引（深入阅读顺序）
 
 1. `docs/spec.md`（总纲 + D1-D18 裁决）→ `docs/spec-src/00-05`（六分册）
-2. `docs/p1/roofline.md`（带宽/算力口径）、`docs/p2/m2a-report.md`、`docs/p10/asic-report.md`（§10.7 双工艺、§10.9 PE、§10.10 tile）
+2. `docs/p1/roofline.md`（带宽/算力口径）、`docs/p2/m2a-report.md`、`docs/p10/asic-report.md`（§10.7 双工艺、§10.9 PE、§10.10 tile、§10.11 array）
 3. `docs/perf-research/roadmap.md`（路线图）→ `decision/DECISION.md`（决策链 + §6/§7 实测裁决）→ `decision/rotator-impl.md`（B' 旋转器交付）→ `decision/bprime-impl.md` → 各实测报告与 JSON
 4. `README.md`（含 SMIC28 setup 环境依赖）、`reproduction.md`（复现手册）、`UPLOAD-MANIFEST.md`
 5. `plans/`（全部立项计划与评审修订历史；工作流范本）
@@ -357,6 +379,8 @@ golden3/full co-sim，B' co-sim 已另行验证 3/3）。
 9. **DC Presto 严格性**：混合阻塞/非阻塞赋值对同一信号（b_slice）在 Verilator 只告警、DC 直接 VER-134 致命——新代码一律非阻塞。
 10. **DC Presto signed 语义**：旧版前端对多层 `$signed` 乘法可能发出 VER-318 宽度/符号转换告警；`matrix_int8_pe` 用显式二补数幅值乘法并以完整 8-bit 域 + 映射门级验证锁定语义，重构时必须保留同等级检查。
 11. **tile 时钟扇出**：16×16 probe 综合已有 17,465 个 `clk` loads，DC 使用 fanout=1000 的 wire-load 估算；任何 64-tile 组装结果都必须经过 CTS/寄生 STA，不能把 ideal-clock `MET` 当 signoff。
+12. **array 权重带宽**：逐 PE 的标量权重端口会把一份 32 KiB bank 拉长到 16,384 cycles；Track 2.4c 的接口是整行 128 列、两路 INT8，即 **256 B/cycle、128 cycles/bank**。改回标量端口会破坏 PF overlap 约束。
+13. **DC lane reconstruction 资源**：当前 full probe 用 packed 128-row delay pipeline 证明时序语义，功能正确但寄存器/选择网络很大；不要直接用它做物理 PPA。下一版应按 lane/tile 切成局部 FIFO 或 register slice，并重新做 congestion/CTS 评估。
 
 ---
 

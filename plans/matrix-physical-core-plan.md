@@ -120,5 +120,34 @@ TT/SS 报告分别为 267,699/324,949 nets、3,254 ports；compile_ultra CPU tim
 前处理 clock distribution，并用 CTS/寄生 STA 重新裁决频率；不能把 tile 探针当作阵列
 signoff。
 
-下一门槛是 Track 2.4c：例化 64 个 tile，验证 32,768 MAC/cycle 与 256-cycle fill/drain，
-加入 PF 双缓冲权重接口和 DC lane 重构网络，再评估是否需要物理层级/时钟分区。
+Track 2.4c 的目标是例化 64 个 tile，验证 32,768 MAC/cycle 与 256-cycle fill/drain，
+加入 PF 双缓冲权重接口和 DC lane 重构网络，再评估是否需要物理层级/时钟分区；实测收口
+见下节。
+
+## 6. Track 2.4c 实测收口（2026-08-19）
+
+状态：**结构功能闭合，物理 signoff 未开始**。`asic/matrix_int8_pe_array.sv` 默认例化
+8×8 个 `matrix_int8_pe_tile`，即 64 个 16×16 tile、16,384 个 dual-MAC PE。PF 权重
+接口改为一整行并行写入：128 个列位置每拍各接收两路 INT8，共 **256 B/cycle**；一份
+32 KiB bank 在 128 个 row-cycle 内完成，第二 bank 可在活动 bank 计算期间重载，随后以
+`weight_commit` 原子切换；阵列用最长 hop drain counter 拒绝在途 wave 中的切换。
+
+验证门槛：
+
+- 2×2 tile-grid（32×32 PE）控制/算术/DC scoreboard：**8,960 checks / 0 failure**；
+  覆盖双 bank、非活动 bank overlap load、PF wave、300-cycle MODE barrier 和 DC
+  重构 wave；
+- 完整 8×8 tile-grid registered-boundary scoreboard：**197,635 checks / 0 failure**；
+  连续 256 个 PF wave 覆盖全 128×128 边界，最大同时活动 **16,384 PE = 32,768
+  INT8 MAC/cycle**，wave 0 的最后输出槽对应 **256-cycle fill/drain**；
+- `verilator --lint-only`（2×2 参数化与默认 full probe）及 `desugar_dc.py` 通过。
+
+DC flow 已加入 `matrix_int8_pe_array` 入口并保留 tile 层次，但本轮不运行完整 64-tile
+`compile_ultra`：DC 2018 对 packed DC lane reconstruction 会展开很大的寄存器管线，且
+尚无可用的阵列 Liberty/LEF、CTS、布线和寄生。因而本节点只交付结构 RTL 证据，**不报告
+完整阵列 PPA，也不把理想时钟下的 tile 复制面积当作 signoff**。DC 重构管线是后续物理
+优化的明确风险点，应在 floorplan 前改成分 lane/分 tile 的局部 FIFO 或物理寄存器切片。
+
+下一门槛是 Track 2.4d（dtype/后处理）与 Track 2.4e（阵列物理集成）之间的裁决：先确定
+DC lane 网络的可综合物理实现，再导入真实 tile boundary、32 KiB 权重 SRAM、后处理和
+CTS/寄生 STA；在此之前维持本节点的 32,768 MAC/cycle 只作为功能吞吐契约。

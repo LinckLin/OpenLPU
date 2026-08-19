@@ -13,7 +13,7 @@
 #
 # Env inputs:  DC_CORNER  tt_025C_1v80 | ss_100C_1v60
 #              DC_DESIGN  synth_datapath | mac_bf16 | matrix_int8_pe |
-#                         matrix_int8_pe_tile
+#                         matrix_int8_pe_tile | matrix_int8_pe_array
 #              DC_TECH    sky130 (default) | smic28
 #              DC_LABEL   optional report-name suffix
 #              DC_PERIOD  optional clock period in ns (default: 1.0)
@@ -68,6 +68,9 @@ if {$design == "synth_datapath"} {
 } elseif {$design == "matrix_int8_pe_tile"} {
   analyze -format sverilog asic/dc/gen/matrix_int8_pe_tile_probe.sv
   elaborate matrix_int8_pe_tile_probe
+} elseif {$design == "matrix_int8_pe_array"} {
+  analyze -format sverilog asic/dc/gen/matrix_int8_pe_array_probe.sv
+  elaborate matrix_int8_pe_array_probe
 } else {
   puts "ERROR: unknown DC_DESIGN '$design'"
   exit 1
@@ -94,6 +97,15 @@ if {$design == "matrix_int8_pe"} {
   if {[sizeof_collection $pe_cells] > 0} {
     set_ungroup $pe_cells false
     set_boundary_optimization $pe_cells false
+  }
+} elseif {$design == "matrix_int8_pe_array"} {
+  # Keep each 16x16 tile as the physical partition.  The array wrapper is a
+  # structural integration probe; CTS and tile-to-tile routing remain a later
+  # physical step, so the array report is not a signoff Liberty.
+  set tile_cells [get_cells -hierarchical -filter "ref_name == matrix_int8_pe_tile"]
+  if {[sizeof_collection $tile_cells] > 0} {
+    set_ungroup $tile_cells false
+    set_boundary_optimization $tile_cells false
   }
 }
 

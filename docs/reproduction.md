@@ -258,6 +258,10 @@ DC_TECH=smic28 DC_LABEL=tile1c \
 
 # TT tile 映射网表 smoke（官方 HDC30P140 model，Icarus）
 bash asic/run_matrix_int8_pe_tile_gate_check.sh
+
+# 8x8 tile grid = 128x128 PE structural array (full run uses more compile time)
+bash asic/run_matrix_int8_pe_array_check.sh
+VERILATOR_JOBS=32 bash asic/run_matrix_int8_pe_array_full_check.sh
 ```
 
 以下是保留的 sky130 legacy 开源复现路径。sky130 liberty（`sky130_fd_sc_hd__*.lib`，
@@ -301,6 +305,13 @@ SMIC28：矩阵状态壳定向测试 4/4 PASS；DC 识别 9 个矩阵 kh4096x64�
 SMIC28：代表 synth_datapath / mac_bf16 的 tt/ss 1 ns ideal-clock 探针均 MET
 SMIC28：dual-MAC PE 核心/registered probe/TT 映射网表均 PASS；1.0 ns 与 0.9 ns 双角探针 MET
 SMIC28：16x16 tile RTL **2720 checks**、TT gate **1168 checks** 均 PASS；TT/SS tile 1 ns probe MET
+SMIC28：2x2 array RTL **8960 checks / 0 failure**；默认 8x8 array **197635 checks / 0 failure**
+SMIC28：默认 array scoreboard 峰值 **32768 INT8 MAC/cycle**，wave 0 fill/drain **256 cycles**
 legacy sky130：P10b 数据通路 tt Fmax ≈ 129 MHz；历史 ss/ff corner 见报告 §3
-结论：以上均为 pre-layout 综合/STA 口径；64-tile 完整阵列、整芯片 CTS/寄生 signoff 尚未闭合
+结论：array 结果是 pre-layout structural RTL 证据；完整阵列 DC/Liberty、CTS/寄生 signoff 尚未闭合
 ```
+
+完整 8×8 run 会展开 64 个 tile，建议设置 `VERILATOR_JOBS` 控制并行度；生成的
+`asic/obj_dir_matrix_pe_array*` 仅为本地构建目录，不应提交。`DC_DESIGN=matrix_int8_pe_array`
+入口已接入流程，但默认 packed DC reconstruction 仍是结构 probe，本轮不以它生成阵列 PPA
+或 signoff Liberty。
