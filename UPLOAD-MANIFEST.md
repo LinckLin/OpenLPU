@@ -25,7 +25,7 @@
 - 源码：compiler/、qforge/、qrun/、qsim/、ref/（生成器脚本，不含 golden 数据）
 - 硬件：rtl/（源 + tb 驱动，不含 obj_*/_obj/asicsnap）、fpga/（源 + tb，不含 obj_*/_obj）
 - 流程：asic/（脚本 + tcl/sh/py/sv/lib + netlist 门级网表 + mem_stub，不含 db/gen/simv/csrc/daidir）
-- 文档：docs/（全部报告与 spec 六分册）、plans/（11 份计划含评审记录）
+- 文档：docs/（全部报告与 spec 六分册）、plans/（12 份计划含评审记录；含 matrix 物理计算核推进计划）
 
 ## 敏感性检查结论
 

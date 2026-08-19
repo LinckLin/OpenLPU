@@ -2,9 +2,10 @@
 # run_dc.sh — QCore DC synthesis (Design Compiler O-2018.06-SP1).
 # Usage: ./asic/dc/run_dc.sh <corner> <design>
 #   corner : tt_025C_1v80 | ss_100C_1v60
-#   design : synth_datapath | mac_bf16 | synth_top
+#   design : synth_datapath | mac_bf16 | matrix_int8_pe | synth_top
 #   DC_TECH env: sky130 (default) | smic28 — logic std cell library
 #   DC_LABEL env: optional report-name suffix
+#   DC_PERIOD env: optional clock period in ns (default: 1.0)
 set -euo pipefail
 CORNER="${1:-tt_025C_1v80}"
 DESIGN="${2:-synth_datapath}"
@@ -17,7 +18,7 @@ export DC_CORNER="$CORNER"
 export DC_DESIGN="$DESIGN"
 
 case "$DESIGN" in
-  synth_datapath|mac_bf16)
+  synth_datapath|mac_bf16|matrix_int8_pe)
     TCL=asic/dc/dc_flow.tcl
     ;;
   synth_top)

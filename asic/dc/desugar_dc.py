@@ -32,7 +32,12 @@ REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 ASIC = REPO / "asic"
 DST = ASIC / "dc" / "gen"
 
-PIPELINE = ["synth_datapath.sv", "synth_mac.sv"]
+PIPELINE = [
+    "synth_datapath.sv",
+    "synth_mac.sv",
+    "matrix_int8_pe.sv",
+    "matrix_int8_pe_probe.sv",
+]
 
 LOOP_BREAK = re.compile(r"\bk\s*=\s*-1\s*;")
 

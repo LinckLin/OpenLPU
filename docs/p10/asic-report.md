@@ -5,8 +5,9 @@
 > 冻结快照：`rtl/ref/asicsnap/`（开工时打点；rtl/ 只读，P8 未改 rtl/ 源）。
 > D18 更新（2026-08-19）：代表数据通路与 BF16 MAC 已用 SMIC28 HDC30P140 RVT
 > 重综合，tt/ss 均闭合 1 ns ideal-clock 探针；矩阵状态 RAM 已接入 9 个真宏，且
-> Track 2.3 已闭合双角 SRAM 输入/读回 scoped timing；全系统算术核、CTS 与物理
-> signoff 另行列示。
+> Track 2.3 已闭合双角 SRAM 输入/读回 scoped timing；Track 2.4a 已交付单拍 dual-MAC
+> INT8 PE 及 TT/SS 1.0/0.9 ns 映射证据。16×16 tile、完整 128×128 阵列、CTS 与物理
+> signoff 仍另行列示。
 
 ## 0. 结论速览
 
@@ -14,8 +15,8 @@
 |---|---|
 | elaboration | ✅ 通过（Verilator 4.038 原 RTL lint + Yosys 0.44 层级检查，见 §1） |
 | 逻辑综合 | ✅ 通过（8 项 FP 基元 → legacy sky130 与当前 SMIC28 门级网表，见 §2/§10.4） |
-| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前含 matrix 真宏壳的 SMIC28 全顶层 tt/ss 探针为 689.7/518.1 MHz，最差路径均在 B-feed（§10.8.5）；Track 2.1 量化器流水化基线为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath` 与 `mac_bf16` 的 SMIC28 DC tt/ss 均在 1 ns 探针下 `MET`，arrival 0.98–0.99 ns（§10.4）；这些都是 pre-layout 探针，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
-| 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；legacy sky130 P10b：ALU top 0.0609 / mac_bf16 ≈0.0349 / mac_int8 ≈0.0053 mm²；SRAM 100.7–268.4 mm²为旧公开密度估算 |
+| 时序收敛结论 | ⚠️ **全系统 1 GHz 尚未收敛**：当前含 matrix 真宏壳的 SMIC28 全顶层 tt/ss 探针为 689.7/518.1 MHz，最差路径均在 B-feed（§10.8.5）；Track 2.1 量化器流水化基线为 636.9/471.7 MHz（§10.7）。代表 `synth_datapath`、`mac_bf16` 与新 dual-MAC PE 的 SMIC28 DC tt/ss 1 ns 探针均 `MET`；PE 基线 arrival 0.98/0.97 ns 且显示 slack +0.00 ns，0.9 ns 加强映射也 `MET`（§10.9）。这些都是 pre-layout 探针，不是整芯片 signoff。legacy sky130 口径保留：DC 数据通路 tt/ss 331/169 MHz、Yosys/OpenSTA tt 129 MHz。 |
+| 面积 | SMIC28 DC：`synth_datapath` 0.003085/0.003237 mm²（tt/ss），`mac_bf16` 0.001906/0.001961 mm²；dual-MAC PE 本体 0.000560/0.000631 mm²，直接复制 16,384 个 PE 仅给出 9.183/10.345 mm² cell-area 下限（不含布线/CTS/SRAM/后处理）；legacy sky130 P10b 与旧公开 SRAM 密度估算保留为历史口径 |
 | token/s | 冻结 1 GHz 口径 960/675/469；SMIC28 代表数据通路已支持 1 GHz 综合探针，但系统频率仍受控制平面与后续物理实现限制，暂不改写端到端 token/s |
 
 
@@ -296,8 +297,9 @@ FP32/BF16/INT32 向量（含 normal/denormal/inf/nan/zero/±0/饱和）对拍流
 > legacy sky130 结果与 OpenSTA 同口径交叉验证；
 > **全设计 synth_top elaborate + link + compile_ultra 跑通**（存储/数字核黑盒化，
 > 控制平面真综合，§10.5）；Track 2.2b 进一步综合矩阵状态/控制壳并链接 9 个真 SRAM，
-> Track 2.3 闭合其双角输入/读回 scoped timing；128×128 算术核与 vector core 仍保留
-> 物理宏边界（§10.8）。
+> Track 2.3 闭合其双角输入/读回 scoped timing；Track 2.4a 已真综合 dual-MAC PE，
+> 但 16×16 tile 与完整 128×128 算术核尚未接入全顶层，matrix/vector core 仍保留
+> 物理宏边界（§10.8/§10.9）。
 
 ### 10.1 工具与 license（步骤 1）
 
@@ -458,8 +460,9 @@ SRAM 估算 + §10.4 基元口径另计）。关键路径 7.33 ns 是控制平�
 `clean_lib.py` /
 `sta_dc.tcl` / `mem_stub.lib`（DC-local）/ `bb_sram.sv`（指令流 SRAM 黑盒）+ `db/`
 （tt/ss `.db` + mem_stub.db）+ `gen/` / `gen_full/`（desugar 产物；matrix 为真 SRAM
-状态壳，matrix_compute_core/vector_engine 为黑盒）+ `reports/`（基元 4 份 rpt + 4 份网表 + 全设计
-synth_top tt/ss 2 份 rpt + 2 份网表 .v）。
+状态壳，matrix_compute_core/vector_engine 为黑盒）+ `reports/`（代表数据通路基元报告/
+网表、dual-MAC PE 的 1.0/0.9 ns TT/SS 四份报告，以及全设计 synth_top 双角报告/网表；
+门级 `.v` 为本地可再生成产物，不进入公开仓库）。
 
 **需评审项**：
 1. **Fmax 口径重标定**：DC compile_ultra 对同一 liberty 的 Fmax(tt)=331 MHz，显著高于
@@ -650,6 +653,58 @@ TT 输入裕量也从 +0.01 ns 提升到 +0.57 ns；两角 top-10 scoped 输入�
 `MET`。这只闭合了当前真 SRAM 接口的 pre-layout 局部目标。全局 B-feed 仍违例，且报告
 仍不含 `matrix_compute_core` Liberty、CTS、布局布线与提取寄生，不能据此宣称全芯片
 1 GHz signoff。
+
+### 10.9 Matrix dual-MAC PE 物理基元（Track 2.4a）
+
+冻结规格要求 128×128 weight-stationary 阵列，每 PE 保存两份 INT8 权重、每拍接收两路
+激活与北向 INT32 partial sum，并把激活向东、partial sum 向南各推进一个 PE。新增
+`asic/matrix_int8_pe.sv` 实现同拍两次 signed `INT8×INT8` 加法与模 2^32 累加；输出边界
+全部寄存，连续 valid 的吞吐为 2 MAC/PE/cycle。未增加隐藏流水，因此仍可组成规格中的
+128 列水平传播 + 128 行垂直传播 = 256-cycle fill/drain。
+
+`matrix_int8_pe_probe` 在 west/north 输入前加入 49 个真实 launch flop，避免顶层零 input
+delay 掩盖相邻 PE 的 clock-to-Q；综合时保留 `u_pe` 层次，报告可分离 PE 与 probe 开销。
+测试证据如下：
+
+- 核心 Verilator：边界、bubble、权重重载、背靠背 valid、随机 INT32 psum，并让每路
+  activation×weight 都覆盖完整 256×256 域，**65,544 checks / 0 failure**；
+- registered probe：**964 checks / 0 failure**；
+- TT 映射网表 + 官方 HDC30P140 functional standard-cell model：Icarus 独立 scoreboard
+  **1,928 checks / 0 failure**。官方模型含 Verilog-1995 UDP，故门级执行使用 Icarus，
+  RTL/probe 仍由 Verilator 验证。
+
+SMIC28 流程兼容标签 `tt_025C_1v80`/`ss_100C_1v60` 在本节实际映射到
+`tt_v0p9_25c` 与 `ssg_v0p81_125c`。`compile_ultra` 结果为：
+
+| corner | 约束 | 最差路径 | arrival / slack | cells | PE 本体面积 | probe 总面积 | probe dynamic / leakage |
+|---|---:|---|---:|---:|---:|---:|---:|
+| TT | 1.0 ns | `weight0_reg[0] → psum_south_reg[31]` | 0.98 / **+0.00 ns MET** | 969 | 560.462 µm² | 680.610 µm² | 503.734 / 5.095 µW |
+| SS | 1.0 ns | `launch_act0_reg[2] → psum_south_reg[17]` | 0.97 / **+0.00 ns MET** | 1232 | 631.414 µm² | 751.562 µm² | 433.185 / 62.898 µW |
+| TT | 0.9 ns | `weight0_reg[0] → psum_south_reg[17]` | 0.87 / **+0.01 ns MET** | 1025 | 580.258 µm² | 700.406 µm² | 565.470 / 5.174 µW |
+| SS | 0.9 ns | `launch_act1_reg[1] → psum_south_reg[18]` | 0.87 / **+0.00 ns MET** | 1307 | 691.194 µm² | 811.930 µm² | 500.769 / 69.795 µW |
+
+1.0 ns 基线仅在报告显示精度上达到 `MET`，没有布局后余量。0.9 ns 加强映射相对基线
+分别增加 TT **3.53%**、SS **9.47%** 的 PE cell area，证明前布局阶段可换取约 10% 周期
+预算，但不等同于 CTS/布线后 1 GHz 收敛。功耗没有 VCD 回标，是 probe 级低努力估计，
+不外推整阵列功耗。
+
+按 1.0 ns PE 本体面积直接复制 16,384 份，TT/SS 为 **9.183/10.345 mm²**。这是只含
+标准单元的理论复制下限，未包含时钟树、PE 间互连、拥塞、权重装载网络、9 个状态 SRAM、
+32 KiB 双缓冲权重存储或后处理；不能冒充 tile 或整阵列布局面积。下一阶段必须先实现
+16×16 结构 tile，验证 wavefront skew/valid/权重寻址并做分层综合，再组成 8×8 tile grid。
+
+复现命令（商业库与官方门级模型只在本机使用，不提交仓库）：
+
+```bash
+bash asic/run_matrix_int8_pe_check.sh
+DC_TECH=smic28 DC_LABEL=pe1c bash asic/dc/run_dc.sh tt_025C_1v80 matrix_int8_pe
+DC_TECH=smic28 DC_LABEL=pe1c bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe
+DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
+  bash asic/dc/run_dc.sh tt_025C_1v80 matrix_int8_pe
+DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
+  bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe
+bash asic/run_matrix_int8_pe_gate_check.sh
+```
 
 ## 11. VCS 功能仿真（VCS-MX O-2018.09-SP2，P10 §11）
 

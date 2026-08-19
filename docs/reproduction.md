@@ -222,6 +222,9 @@ P9 FPGA smoke: ALL PASS
 # 九个 kh4096x64 的 bank/address、单口冲突、首元素预取与四种数值模式
 bash asic/run_matrix_sram_check.sh
 
+# 物理阵列 dual-MAC PE：完整 INT8 乘法域、bubble、重载与模 2^32 累加
+bash asic/run_matrix_int8_pe_check.sh
+
 # 准备本地 SMIC28 标准单元和 SRAM 库（详见 asic/sram_macros/*/GEN.md）
 bash asic/smc28/setup_smic28.sh
 
@@ -232,6 +235,17 @@ DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 synth_top
 # 代表数据通路与 BF16 MAC 的 1 ns ideal-clock 探针
 DC_TECH=smic28 bash asic/dc/run_dc.sh tt_025C_1v80 synth_datapath
 DC_TECH=smic28 bash asic/dc/run_dc.sh ss_100C_1v60 mac_bf16
+
+# dual-MAC PE 的 registered-boundary TT/SS 探针；标签与已提交报告一致
+DC_TECH=smic28 DC_LABEL=pe1c bash asic/dc/run_dc.sh tt_025C_1v80 matrix_int8_pe
+DC_TECH=smic28 DC_LABEL=pe1c bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe
+
+# 0.9 ns 裕量映射（可选）及 1.0 ns TT 映射网表功能交叉检查
+DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
+  bash asic/dc/run_dc.sh tt_025C_1v80 matrix_int8_pe
+DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
+  bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe
+bash asic/run_matrix_int8_pe_gate_check.sh
 ```
 
 以下是保留的 sky130 legacy 开源复现路径。sky130 liberty（`sky130_fd_sc_hd__*.lib`，
@@ -273,6 +287,7 @@ done
 ```text
 SMIC28：矩阵状态壳定向测试 4/4 PASS；DC 识别 9 个矩阵 kh4096x64，并报告专属输入/读出路径
 SMIC28：代表 synth_datapath / mac_bf16 的 tt/ss 1 ns ideal-clock 探针均 MET
+SMIC28：dual-MAC PE 核心/registered probe/TT 映射网表均 PASS；1.0 ns 与 0.9 ns 双角探针 MET
 legacy sky130：P10b 数据通路 tt Fmax ≈ 129 MHz；历史 ss/ff corner 见报告 §3
-结论：以上均为 pre-layout 综合/STA 口径；整芯片 1 GHz 与 CTS/寄生 signoff 尚未闭合
+结论：以上均为 pre-layout 综合/STA 口径；16×16 tile、完整阵列、整芯片 CTS/寄生 signoff 尚未闭合
 ```
