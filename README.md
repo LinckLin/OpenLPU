@@ -70,7 +70,7 @@ plans/         各节点计划与评审记录
 > INT4 W4A16 数据通路达成、部署质量 3/20 未达硬门槛——per-64-group/混合精度归 backlog，
 > 见 `docs/p4/quant-error-report.md`）、`docs/p10/asic-report.md`（当前 SMIC28 代表数据
 > 通路闭合 1 ns 综合探针，矩阵状态 RAM 已真宏例化，dual-MAC INT8 PE 已通过 TT/SS
-> 1.0/0.9 ns 映射；16×16 tile、完整阵列、整芯片 CTS/寄生 signoff 尚未闭合。sky130
+> 1.0/0.9 ns 映射，16×16 tile 已有 TT/SS 1 ns pre-layout 证据；完整阵列、整芯片 CTS/寄生 signoff 尚未闭合。sky130
 > P10b 129 MHz 结果作为 legacy 保留）。
 
 ## Synopsys 工具复现注（DC/VCS）
@@ -84,8 +84,8 @@ plans/         各节点计划与评审记录
   `/home/public/PDK/SMIC28/STDcell/SCC28NHKCP_HDC30P140_RVT_V0p2`；宏源包
   `SMIC28_PKG_ROOT` 默认 `/home/public/PDK/SMIC28/SRAM_Ccompiler_ARM20240823`，
   兼容 shim 由 skill `smic28-sram-compiler` 提供），再用
-  `DC_TECH=smic28 bash asic/dc/run_dc.sh <corner> <synth_top|synth_datapath|mac_bf16|matrix_int8_pe>`；
-  四种设计均使用独立 SMIC28 报告标签，不覆盖 sky130 历史结果；`DC_PERIOD` 可覆盖默认
+  `DC_TECH=smic28 bash asic/dc/run_dc.sh <corner> <synth_top|synth_datapath|mac_bf16|matrix_int8_pe|matrix_int8_pe_tile>`；
+  五种设计均使用独立 SMIC28 报告标签，不覆盖 sky130 历史结果；`DC_PERIOD` 可覆盖默认
   1.0 ns probe period。商业 PDK 产物
   （.lib/.lef/.gds2/.cdl/.clf）不入公开仓库，见 `docs/p10/asic-report.md` §10.7。
 - VCS：必须在 Synopsys CentOS 7 兼容命名空间（snps-centos7，glibc 2.17）下编译运行；

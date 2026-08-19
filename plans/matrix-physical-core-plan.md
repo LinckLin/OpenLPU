@@ -82,3 +82,43 @@ TT/SS **9.183/10.345 mm²** 的标准单元面积下限，不能当作 tile 或�
 
 下一门槛是 Track 2.4b：构造 16×16 真实互连 tile，逐周期验证 skew/valid/权重寻址，
 并用分层综合及早暴露 256 个 PE 的扇出、布线和编译容量问题。
+
+## 5. Track 2.4b 实测收口（2026-08-19）
+
+状态：**完成**。`matrix_int8_pe_tile` 结构化例化 256 个 PE，边界把 activation 与
+partial-sum valid 独立 skew：west row `r` 在 `launch+r` 进入，north column `c` 在
+`launch+c` 进入，PE(row,col) 在 `launch+r+c` 汇合。权重用 `(row,col)` 单地址串行加载，
+计算阶段不与加载重叠。该接口保持每个 PE 一拍 hop，不改变规格的 wavefront 深度。
+
+验证门槛全部通过：
+
+- Verilator 波前 scoreboard：**2,720 checks / 0 failure**，含两拍 bubble、全 16×16
+  权重寻址、east activation payload 和 south INT32 累加；
+- TT 映射网表 + 官方 HDC30P140 functional model：Icarus **1,168 checks / 0 failure**；
+- Verilator lint、Icarus 语法检查、DC desugar 均通过。
+
+SMIC28 HDC30P140 RVT 1 ns registered-boundary probe 结果：
+
+| corner | 最差路径 | arrival / slack | tile `u_tile` cell area | probe 总 cell area | cells / sequential | dynamic / leakage |
+|---|---|---:|---:|---:|---:|---:|
+| TT | `gen_row[8].gen_col[4].u_pe/weight0_reg[0] → .../psum_south_reg[31]` | 0.98 / **+0.00 ns MET** | 143,261.986 µm² | 145,040.686 µm² | 229,229 / 17,465 | 64.166 / 1.067 mW |
+| SS | `gen_row[13].gen_col[0].u_pe/act1_east_reg[1] → gen_row[13].gen_col[1].u_pe/psum_south_reg[17]` | 0.97 / **+0.00 ns MET** | 158,331.250 µm² | 160,110.930 µm² | 296,749 / 17,465 | 54.403 / 13.288 mW |
+
+TT/SS 报告分别为 267,699/324,949 nets、3,254 ports；compile_ultra CPU time 为约
+709/1,381 s，峰值 session memory 约 1.65/1.70 GB。DC 输出网表保留 `u_tile` 物理层次
+边界，但 PE 逻辑被展平为 tile 内组合逻辑（timing path 仍保留 `gen_row/gen_col/u_pe`
+来源名），因此不能把每个 `u_pe` 当作独立 hard macro。
+
+按 64 个 tile 直接复制 `u_tile` cell area，得到 TT/SS **9.1688/10.1332 mm²** 的标准
+单元复制下限；若把每 tile 的 registered probe 也算入，则为 **9.2826/10.2471 mm²**。
+这些数字不含 tile-to-tile 边界寄存、8×8 权重/valid 分发、时钟树、SRAM、后处理、拥塞
+和寄生。tile 内部单 PE 平均面积比独立 PE 报告低约 0.15%/2.05%，是 DC 跨实例优化结果，
+不是物理布局收益，不能据此替代 P&R 面积。
+
+两角报告都显示 `clk` 约 **17,465 loads**，DC 对高扇出路径采用 fanout=1000 的 wire-load
+估算（TIM-134）。因此 1 ns 的 `MET` 仍是 pre-layout 数字，下一阶段必须在 64-tile 组装
+前处理 clock distribution，并用 CTS/寄生 STA 重新裁决频率；不能把 tile 探针当作阵列
+signoff。
+
+下一门槛是 Track 2.4c：例化 64 个 tile，验证 32,768 MAC/cycle 与 256-cycle fill/drain，
+加入 PF 双缓冲权重接口和 DC lane 重构网络，再评估是否需要物理层级/时钟分区。

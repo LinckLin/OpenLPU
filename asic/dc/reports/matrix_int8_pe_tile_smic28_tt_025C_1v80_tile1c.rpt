@@ -1,0 +1,782 @@
+==== DC tech=smic28 corner=tt_025C_1v80 design=matrix_int8_pe_tile period_ns=1.0 (compile_ultra) ====
+Information: Updating design information... (UID-85)
+Warning: Design 'matrix_int8_pe_tile_probe' contains 1 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -max_paths 10
+        -sort_by slack
+Design : matrix_int8_pe_tile_probe
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 22:44:28 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt_v0p9_25c   Library: scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+Wire Load Model Mode: top
+
+  Startpoint: u_tile/gen_row[8].gen_col[4].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[8].gen_col[4].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[8].gen_col[4].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[8].gen_col[4].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9603/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U95849/ZN (NAND2V2_140P7T30R)                    0.02       0.08 f
+  u_tile/U95917/ZN (INV4_140P7T30R)                       0.01       0.09 r
+  u_tile/U95918/ZN (NAND2V2_140P7T30R)                    0.01       0.11 f
+  u_tile/U95919/Z (XOR2V2_140P7T30R)                      0.02       0.13 f
+  u_tile/U95920/ZN (NAND2V2_140P7T30R)                    0.01       0.14 r
+  u_tile/U95921/Z (OA12V2_140P7T30R)                      0.03       0.17 r
+  u_tile/U95984/ZN (NOR2V2_140P7T30R)                     0.01       0.19 f
+  u_tile/U8312/S (AD1V2_140P7T30R)                        0.06       0.24 r
+  u_tile/U5195/S (AD1V2_140P7T30R)                        0.05       0.29 f
+  u_tile/U96018/ZN (INV4_140P7T30R)                       0.01       0.30 r
+  u_tile/U96258/S (ADH1V2_140P7T30R)                      0.03       0.33 f
+  u_tile/U525/ZN (NAND2V2_140P7T30R)                      0.01       0.33 r
+  u_tile/U9602/ZN (OAI12V2_140P7T30R)                     0.02       0.36 f
+  u_tile/U96338/CO (AD1V4_140P7T30R)                      0.04       0.40 f
+  u_tile/U10096/CO (AD1V2_140P7T30R)                      0.04       0.43 f
+  u_tile/U96319/CO (AD1V4_140P7T30R)                      0.03       0.47 f
+  u_tile/U9114/CO (AD1V2_140P7T30R)                       0.04       0.50 f
+  u_tile/U96310/CO (AD1V2_140P7T30R)                      0.04       0.54 f
+  u_tile/U96305/CO (AD1V4_140P7T30R)                      0.03       0.58 f
+  u_tile/U96300/CO (AD1V2_140P7T30R)                      0.04       0.62 f
+  u_tile/U9113/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U96291/CO (AD1V2_140P7T30R)                      0.04       0.69 f
+  u_tile/U96286/S (AD1V2_140P7T30R)                       0.05       0.74 r
+  u_tile/U96290/ZN (NOR2V2_140P7T30R)                     0.01       0.75 f
+  u_tile/U96359/Z (OA12V2_140P7T30R)                      0.02       0.78 f
+  u_tile/U96361/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U9601/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U5667/ZN (AOI12V2_140P7T30R)                     0.02       0.84 f
+  u_tile/U174284/ZN (OAI12V4_140P7T30R)                   0.02       0.86 r
+  u_tile/U4228/ZN (AOI21BV4_140P7T30R)                    0.01       0.87 f
+  u_tile/U10095/ZN (OAI12V2_140P7T30R)                    0.02       0.89 r
+  u_tile/U174295/Z (AO12V4_140P7T30R)                     0.02       0.91 r
+  u_tile/U174302/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U174300/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U174301/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[8].gen_col[4].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[8].gen_col[4].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[8].gen_col[0].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[8].gen_col[0].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[8].gen_col[0].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[8].gen_col[0].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9594/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U93682/ZN (NAND2V2_140P7T30R)                    0.02       0.08 f
+  u_tile/U93724/ZN (INV2_140P7T30R)                       0.01       0.10 r
+  u_tile/U93725/ZN (NAND2V2_140P7T30R)                    0.01       0.11 f
+  u_tile/U93726/Z (XOR2V2_140P7T30R)                      0.02       0.13 f
+  u_tile/U93727/ZN (NAND2V2_140P7T30R)                    0.01       0.14 r
+  u_tile/U93728/Z (OA12V2_140P7T30R)                      0.03       0.17 r
+  u_tile/U93825/ZN (NOR2V2_140P7T30R)                     0.02       0.19 f
+  u_tile/U5191/CO (AD1V2_140P7T30R)                       0.04       0.23 f
+  u_tile/U8306/S (AD1V2_140P7T30R)                        0.05       0.28 r
+  u_tile/U8689/S (AD1V2_140P7T30R)                        0.05       0.32 f
+  u_tile/U93853/ZN (INV2_140P7T30R)                       0.01       0.34 r
+  u_tile/U94104/S (ADH1V2_140P7T30R)                      0.03       0.37 f
+  u_tile/U94105/ZN (NAND2V2_140P7T30R)                    0.01       0.38 r
+  u_tile/U94106/ZN (OAI12V2_140P7T30R)                    0.02       0.40 f
+  u_tile/U10085/CO (AD1V2_140P7T30R)                      0.05       0.44 f
+  u_tile/U94158/CO (AD1V4_140P7T30R)                      0.03       0.48 f
+  u_tile/U9109/CO (AD1V2_140P7T30R)                       0.04       0.51 f
+  u_tile/U9108/CO (AD1V2_140P7T30R)                       0.04       0.55 f
+  u_tile/U94145/CO (AD1V2_140P7T30R)                      0.04       0.59 f
+  u_tile/U94140/CO (AD1V2_140P7T30R)                      0.03       0.62 f
+  u_tile/U94135/CO (AD1V2_140P7T30R)                      0.04       0.66 f
+  u_tile/U4208/ZN (NAND2V2_140P7T30R)                     0.01       0.67 r
+  u_tile/U4210/ZN (NAND3V2_140P7T30R)                     0.02       0.69 f
+  u_tile/U94126/S (AD1V2_140P7T30R)                       0.05       0.75 r
+  u_tile/U94130/ZN (NOR2V2_140P7T30R)                     0.01       0.76 f
+  u_tile/U94198/Z (OA12V2_140P7T30R)                      0.02       0.78 f
+  u_tile/U94200/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U9593/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U4265/ZN (AOI12V2_140P7T30R)                     0.02       0.84 f
+  u_tile/U161533/ZN (OAI12V4_140P7T30R)                   0.02       0.86 r
+  u_tile/U161538/ZN (AOI12V2_140P7T30R)                   0.02       0.88 f
+  u_tile/U161542/ZN (OAI12V4_140P7T30R)                   0.02       0.89 r
+  u_tile/U161547/Z (AO12V4_140P7T30R)                     0.02       0.91 r
+  u_tile/U161554/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U161552/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U161553/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[8].gen_col[0].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[8].gen_col[0].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[12].gen_col[11].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[12].gen_col[11].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[12].gen_col[11].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[12].gen_col[11].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9737/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U131858/ZN (NAND2V2_140P7T30R)                   0.02       0.08 f
+  u_tile/U131924/ZN (INV2M_140P7T30R)                     0.01       0.10 r
+  u_tile/U131925/ZN (NAND2V2_140P7T30R)                   0.01       0.11 f
+  u_tile/U131926/Z (XOR2V2_140P7T30R)                     0.02       0.13 f
+  u_tile/U131927/ZN (NAND2V2_140P7T30R)                   0.01       0.14 r
+  u_tile/U131928/Z (OA12V2_140P7T30R)                     0.03       0.17 r
+  u_tile/U131991/ZN (NOR2V2_140P7T30R)                    0.02       0.19 f
+  u_tile/U132007/S (AD1V4_140P7T30R)                      0.05       0.24 r
+  u_tile/U8803/S (AD1V2_140P7T30R)                        0.05       0.29 f
+  u_tile/U5392/ZN (INV4_140P7T30R)                        0.01       0.30 r
+  u_tile/U132264/S (ADH1V2_140P7T30R)                     0.03       0.33 f
+  u_tile/U485/ZN (NAND2V2_140P7T30R)                      0.01       0.33 r
+  u_tile/U9736/ZN (OAI12V2_140P7T30R)                     0.02       0.36 f
+  u_tile/U132344/CO (AD1V4_140P7T30R)                     0.04       0.40 f
+  u_tile/U10243/CO (AD1V2_140P7T30R)                      0.04       0.44 f
+  u_tile/U132325/CO (AD1V4_140P7T30R)                     0.03       0.47 f
+  u_tile/U132320/CO (AD1V4_140P7T30R)                     0.03       0.50 f
+  u_tile/U132315/CO (AD1V2_140P7T30R)                     0.04       0.54 f
+  u_tile/U9238/CO (AD1V2_140P7T30R)                       0.04       0.58 f
+  u_tile/U132306/CO (AD1V2_140P7T30R)                     0.04       0.62 f
+  u_tile/U9237/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U132297/CO (AD1V2_140P7T30R)                     0.04       0.69 f
+  u_tile/U132292/S (AD1V2_140P7T30R)                      0.05       0.74 r
+  u_tile/U132296/ZN (NOR2V2_140P7T30R)                    0.01       0.75 f
+  u_tile/U132365/Z (OA12V2_140P7T30R)                     0.02       0.78 f
+  u_tile/U132367/Z (OA12V2_140P7T30R)                     0.02       0.80 f
+  u_tile/U9735/ZN (OAI12V2_140P7T30R)                     0.02       0.83 r
+  u_tile/U197417/ZN (AOI12V4_140P7T30R)                   0.01       0.84 f
+  u_tile/U197421/ZN (OAI12V4_140P7T30R)                   0.01       0.85 r
+  u_tile/U197426/ZN (AOI12V2_140P7T30R)                   0.02       0.87 f
+  u_tile/U10242/ZN (OAI12V2_140P7T30R)                    0.02       0.89 r
+  u_tile/U197434/Z (AO12V4_140P7T30R)                     0.02       0.91 r
+  u_tile/U197441/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U197439/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U197440/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[12].gen_col[11].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[12].gen_col[11].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[11].gen_col[3].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[11].gen_col[3].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[11].gen_col[3].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[11].gen_col[3].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9691/ZN (INV2_140P7T30R)                        0.03       0.07 r
+  u_tile/U419/ZN (CLKNAND2V4_140P7T30R)                   0.02       0.08 f
+  u_tile/U119555/ZN (INV4_140P7T30R)                      0.01       0.09 r
+  u_tile/U119556/ZN (NAND2V2_140P7T30R)                   0.01       0.10 f
+  u_tile/U119557/Z (XOR2V2_140P7T30R)                     0.02       0.12 f
+  u_tile/U119558/ZN (NAND2V2_140P7T30R)                   0.01       0.13 r
+  u_tile/U119559/Z (OA12V2_140P7T30R)                     0.03       0.17 r
+  u_tile/U119622/ZN (NOR2V2_140P7T30R)                    0.02       0.18 f
+  u_tile/U119638/S (AD1V4_140P7T30R)                      0.05       0.24 r
+  u_tile/U119656/S (AD1V4_140P7T30R)                      0.04       0.28 f
+  u_tile/U9198/ZN (INV2_140P7T30R)                        0.01       0.29 r
+  u_tile/U119896/S (ADH1V2_140P7T30R)                     0.03       0.32 f
+  u_tile/U530/ZN (NAND2V2_140P7T30R)                      0.01       0.33 r
+  u_tile/U9690/ZN (OAI12V2_140P7T30R)                     0.02       0.35 f
+  u_tile/U119976/CO (AD1V4_140P7T30R)                     0.04       0.39 f
+  u_tile/U10193/CO (AD1V2_140P7T30R)                      0.04       0.43 f
+  u_tile/U119957/CO (AD1V4_140P7T30R)                     0.03       0.47 f
+  u_tile/U119952/CO (AD1V4_140P7T30R)                     0.03       0.50 f
+  u_tile/U119947/CO (AD1V2_140P7T30R)                     0.04       0.54 f
+  u_tile/U9197/CO (AD1V2_140P7T30R)                       0.04       0.57 f
+  u_tile/U119938/CO (AD1V2_140P7T30R)                     0.04       0.61 f
+  u_tile/U9196/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U119929/CO (AD1V2_140P7T30R)                     0.04       0.69 f
+  u_tile/U119924/S (AD1V2_140P7T30R)                      0.05       0.74 r
+  u_tile/U119928/ZN (NOR2V2_140P7T30R)                    0.01       0.75 f
+  u_tile/U119997/Z (OA12V2_140P7T30R)                     0.02       0.78 f
+  u_tile/U119999/Z (OA12V2_140P7T30R)                     0.02       0.80 f
+  u_tile/U9689/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U346/ZN (AOI12V2_140P7T30R)                      0.02       0.84 f
+  u_tile/U171711/ZN (OAI12V4_140P7T30R)                   0.02       0.86 r
+  u_tile/U171716/ZN (AOI12V2_140P7T30R)                   0.02       0.87 f
+  u_tile/U171720/ZN (OAI12V4_140P7T30R)                   0.02       0.89 r
+  u_tile/U10192/Z (AO12V2_140P7T30R)                      0.02       0.91 r
+  u_tile/U171731/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U171729/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U171730/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[11].gen_col[3].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[11].gen_col[3].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[3].gen_col[5].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[3].gen_col[5].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[3].gen_col[5].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[3].gen_col[5].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U2357/ZN (INV4_140P7T30R)                        0.01       0.06 r
+  u_tile/U55999/ZN (NAND2V2_140P7T30R)                    0.01       0.07 f
+  u_tile/U6966/ZN (INV2_140P7T30R)                        0.01       0.08 r
+  u_tile/U56065/ZN (NAND2V2_140P7T30R)                    0.01       0.09 f
+  u_tile/U56066/Z (XOR2V2_140P7T30R)                      0.02       0.12 f
+  u_tile/U56067/ZN (NAND2V2_140P7T30R)                    0.01       0.13 r
+  u_tile/U56068/Z (OA12V2_140P7T30R)                      0.03       0.16 r
+  u_tile/U56131/ZN (NOR2V2_140P7T30R)                     0.01       0.17 f
+  u_tile/U4883/S (AD1V2_140P7T30R)                        0.06       0.23 r
+  u_tile/U8576/S (AD1V2_140P7T30R)                        0.04       0.28 f
+  u_tile/U56163/ZN (INV2_140P7T30R)                       0.01       0.29 r
+  u_tile/U56403/S (ADH1V2_140P7T30R)                      0.03       0.32 f
+  u_tile/U5430/ZN (NAND2V2_140P7T30R)                     0.01       0.33 r
+  u_tile/U9446/ZN (OAI12V2_140P7T30R)                     0.02       0.35 f
+  u_tile/U22/CO (AD1V2_140P7T30R)                         0.05       0.39 f
+  u_tile/U252/CO (AD1V2_140P7T30R)                        0.04       0.43 f
+  u_tile/U4537/CO (AD1V4_140P7T30R)                       0.03       0.47 f
+  u_tile/U56458/CO (AD1V4_140P7T30R)                      0.03       0.50 f
+  u_tile/U4458/CO (AD1V4_140P7T30R)                       0.03       0.53 f
+  u_tile/U5429/CO (AD1V2_140P7T30R)                       0.04       0.57 f
+  u_tile/U56445/CO (AD1V2_140P7T30R)                      0.04       0.61 f
+  u_tile/U8971/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U56436/CO (AD1V2_140P7T30R)                      0.04       0.68 f
+  u_tile/U56431/S (AD1V2_140P7T30R)                       0.05       0.74 r
+  u_tile/U56435/ZN (NOR2V2_140P7T30R)                     0.01       0.75 f
+  u_tile/U56501/Z (OA12V2_140P7T30R)                      0.02       0.77 f
+  u_tile/U56503/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U9445/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U4459/ZN (AOI12V4_140P7T30R)                     0.01       0.83 f
+  u_tile/U9928/ZN (OAI12V2_140P7T30R)                     0.02       0.85 r
+  u_tile/U251/ZN (AOI12V2_140P7T30R)                      0.02       0.87 f
+  u_tile/U5568/ZN (OAI12V2_140P7T30R)                     0.02       0.89 r
+  u_tile/U5567/Z (AO12V2_140P7T30R)                       0.02       0.91 r
+  u_tile/U176463/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U176461/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U176462/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[3].gen_col[5].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[3].gen_col[5].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[3].gen_col[12].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[3].gen_col[12].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[3].gen_col[12].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[3].gen_col[12].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9462/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U59779/ZN (NAND2V2_140P7T30R)                    0.02       0.08 f
+  u_tile/U59847/ZN (INV2M_140P7T30R)                      0.01       0.10 r
+  u_tile/U59854/ZN (XNOR2V2_140P7T30R)                    0.02       0.12 r
+  u_tile/U59855/ZN (NAND2V2_140P7T30R)                    0.01       0.13 f
+  u_tile/U59856/Z (OA12V2_140P7T30R)                      0.03       0.15 f
+  u_tile/U59916/ZN (NOR2V2_140P7T30R)                     0.02       0.17 r
+  u_tile/U59930/CO (ADH1V2_140P7T30R)                     0.03       0.20 r
+  u_tile/U8210/CO (AD1V2_140P7T30R)                       0.03       0.23 r
+  u_tile/U59923/S (AD1V4_140P7T30R)                       0.05       0.28 f
+  u_tile/U59946/S (AD1V2_140P7T30R)                       0.05       0.33 r
+  u_tile/U59947/ZN (INV2_140P7T30R)                       0.01       0.34 f
+  u_tile/U60188/S (ADH1V2_140P7T30R)                      0.02       0.36 f
+  u_tile/U60189/ZN (NAND2V2_140P7T30R)                    0.01       0.37 r
+  u_tile/U60190/ZN (OAI12V2_140P7T30R)                    0.02       0.39 f
+  u_tile/U9945/CO (AD1V2_140P7T30R)                       0.05       0.44 f
+  u_tile/U60247/CO (AD1V4_140P7T30R)                      0.03       0.47 f
+  u_tile/U60242/CO (AD1V4_140P7T30R)                      0.03       0.50 f
+  u_tile/U60237/CO (AD1V2_140P7T30R)                      0.04       0.54 f
+  u_tile/U8985/CO (AD1V2_140P7T30R)                       0.04       0.58 f
+  u_tile/U60228/CO (AD1V2_140P7T30R)                      0.04       0.62 f
+  u_tile/U8984/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U60219/CO (AD1V2_140P7T30R)                      0.04       0.69 f
+  u_tile/U4212/S (AD1V4_140P7T30R)                        0.05       0.74 r
+  u_tile/U60218/ZN (NOR2V2_140P7T30R)                     0.01       0.75 f
+  u_tile/U60287/Z (OA12V2_140P7T30R)                      0.02       0.78 f
+  u_tile/U60289/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U9460/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U5572/ZN (AOI12V2_140P7T30R)                     0.02       0.84 f
+  u_tile/U9944/ZN (OAI12V2_140P7T30R)                     0.02       0.86 r
+  u_tile/U4213/ZN (AOI12V4_140P7T30R)                     0.01       0.88 f
+  u_tile/U198783/ZN (OAI12V4_140P7T30R)                   0.01       0.89 r
+  u_tile/U198788/Z (AO12V4_140P7T30R)                     0.02       0.91 r
+  u_tile/U198795/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U198793/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U198794/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[3].gen_col[12].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[3].gen_col[12].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[2].gen_col[7].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[2].gen_col[7].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[2].gen_col[7].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[2].gen_col[7].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9419/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U48998/ZN (NAND2V2_140P7T30R)                    0.02       0.08 f
+  u_tile/U49064/ZN (INV4_140P7T30R)                       0.01       0.09 r
+  u_tile/U49065/ZN (NAND2V2_140P7T30R)                    0.01       0.11 f
+  u_tile/U49066/Z (XOR2V2_140P7T30R)                      0.02       0.13 f
+  u_tile/U49067/ZN (NAND2V2_140P7T30R)                    0.01       0.14 r
+  u_tile/U7375/Z (OA12V2_140P7T30R)                       0.03       0.17 r
+  u_tile/U49130/ZN (NOR2V2_140P7T30R)                     0.01       0.19 f
+  u_tile/U4872/S (AD1V2_140P7T30R)                        0.06       0.24 r
+  u_tile/U8554/S (AD1V2_140P7T30R)                        0.04       0.29 f
+  u_tile/U5345/ZN (INV2_140P7T30R)                        0.01       0.30 r
+  u_tile/U49402/S (ADH1V2_140P7T30R)                      0.03       0.33 f
+  u_tile/U497/ZN (NAND2V2_140P7T30R)                      0.01       0.34 r
+  u_tile/U9418/ZN (OAI12V2_140P7T30R)                     0.02       0.36 f
+  u_tile/U49482/CO (AD1V4_140P7T30R)                      0.04       0.40 f
+  u_tile/U9900/CO (AD1V2_140P7T30R)                       0.04       0.44 f
+  u_tile/U49463/CO (AD1V4_140P7T30R)                      0.03       0.47 f
+  u_tile/U8947/CO (AD1V2_140P7T30R)                       0.04       0.51 f
+  u_tile/U49454/CO (AD1V2_140P7T30R)                      0.04       0.55 f
+  u_tile/U49449/CO (AD1V4_140P7T30R)                      0.03       0.58 f
+  u_tile/U49444/CO (AD1V2_140P7T30R)                      0.04       0.62 f
+  u_tile/U8946/CO (AD1V2_140P7T30R)                       0.04       0.66 f
+  u_tile/U49435/CO (AD1V2_140P7T30R)                      0.04       0.70 f
+  u_tile/U49430/S (AD1V2_140P7T30R)                       0.05       0.75 r
+  u_tile/U49434/ZN (NOR2V2_140P7T30R)                     0.01       0.76 f
+  u_tile/U49503/Z (OA12V2_140P7T30R)                      0.03       0.78 f
+  u_tile/U4403/Z (OA12V4_140P7T30R)                       0.02       0.81 f
+  u_tile/U9417/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U5550/ZN (AOI12V2_140P7T30R)                     0.02       0.84 f
+  u_tile/U182608/ZN (OAI12V4_140P7T30R)                   0.02       0.86 r
+  u_tile/U182613/ZN (AOI12V2_140P7T30R)                   0.02       0.88 f
+  u_tile/U4402/ZN (OAI12V4_140P7T30R)                     0.02       0.89 r
+  u_tile/U182621/Z (AO12V4_140P7T30R)                     0.02       0.91 r
+  u_tile/U182628/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U182626/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U182627/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[2].gen_col[7].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[2].gen_col[7].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[0].gen_col[13].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[0].gen_col[13].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[0].gen_col[13].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[0].gen_col[13].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U36071/ZN (INV4_140P7T30R)                       0.01       0.06 r
+  u_tile/U36072/ZN (NAND2V2_140P7T30R)                    0.01       0.07 f
+  u_tile/U6944/ZN (INV2_140P7T30R)                        0.01       0.08 r
+  u_tile/U36138/ZN (NAND2V2_140P7T30R)                    0.01       0.09 f
+  u_tile/U36139/Z (XOR2V2_140P7T30R)                      0.02       0.12 f
+  u_tile/U4539/ZN (NAND2V2_140P7T30R)                     0.01       0.13 r
+  u_tile/U36/Z (OA12V2_140P7T30R)                         0.03       0.16 r
+  u_tile/U36202/ZN (NOR2V2_140P7T30R)                     0.01       0.17 f
+  u_tile/U4848/S (AD1V2_140P7T30R)                        0.06       0.23 r
+  u_tile/U5057/S (AD1V2_140P7T30R)                        0.04       0.28 f
+  u_tile/U36235/ZN (INV2_140P7T30R)                       0.01       0.29 r
+  u_tile/U129/S (ADH1V2_140P7T30R)                        0.03       0.32 f
+  u_tile/U4548/ZN (NAND2V2_140P7T30R)                     0.01       0.33 r
+  u_tile/U9363/ZN (OAI12V2_140P7T30R)                     0.02       0.35 f
+  u_tile/U4564/CO (AD1V4_140P7T30R)                       0.04       0.39 f
+  u_tile/U4538/CO (AD1V4_140P7T30R)                       0.03       0.42 f
+  u_tile/U4472/CO (AD1V4_140P7T30R)                       0.03       0.45 f
+  u_tile/U8899/CO (AD1V2_140P7T30R)                       0.04       0.49 f
+  u_tile/U36523/CO (AD1V2_140P7T30R)                      0.04       0.53 f
+  u_tile/U5409/CO (AD1V2_140P7T30R)                       0.04       0.57 f
+  u_tile/U36514/CO (AD1V2_140P7T30R)                      0.04       0.61 f
+  u_tile/U8898/CO (AD1V2_140P7T30R)                       0.04       0.65 f
+  u_tile/U36505/CO (AD1V2_140P7T30R)                      0.04       0.69 f
+  u_tile/U36500/S (AD1V2_140P7T30R)                       0.05       0.74 r
+  u_tile/U36504/ZN (NOR2V2_140P7T30R)                     0.01       0.75 f
+  u_tile/U36570/Z (OA12V2_140P7T30R)                      0.02       0.77 f
+  u_tile/U36572/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U9362/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U9847/ZN (AOI12V2_140P7T30R)                     0.02       0.83 f
+  u_tile/U5510/ZN (OAI12V2_140P7T30R)                     0.02       0.85 r
+  u_tile/U201360/ZN (AOI12V2_140P7T30R)                   0.02       0.87 f
+  u_tile/U4252/ZN (OAI12V4_140P7T30R)                     0.02       0.89 r
+  u_tile/U9846/Z (AO12V2_140P7T30R)                       0.02       0.91 r
+  u_tile/U201374/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U201372/ZN (XNOR2V2_140P7T30R)                   0.02       0.96 r
+  u_tile/U201373/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[0].gen_col[13].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[0].gen_col[13].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[8].gen_col[11].u_pe/act0_east_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[8].gen_col[12].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[8].gen_col[11].u_pe/act0_east_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[8].gen_col[11].u_pe/act0_east_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U6071/ZN (INV2_140P7T30R)                        0.03       0.07 r
+  u_tile/U100114/ZN (NAND2V2_140P7T30R)                   0.02       0.09 f
+  u_tile/U100157/ZN (INV2_140P7T30R)                      0.01       0.10 r
+  u_tile/U100158/ZN (NAND2V2_140P7T30R)                   0.01       0.11 f
+  u_tile/U100159/Z (XOR2V2_140P7T30R)                     0.02       0.13 f
+  u_tile/U100160/ZN (NAND2V2_140P7T30R)                   0.01       0.14 r
+  u_tile/U100161/Z (OA12V2_140P7T30R)                     0.03       0.18 r
+  u_tile/U100260/ZN (NOR2V2_140P7T30R)                    0.02       0.19 f
+  u_tile/U100276/S (AD1V4_140P7T30R)                      0.05       0.25 r
+  u_tile/U8707/S (AD1V2_140P7T30R)                        0.04       0.29 f
+  u_tile/U2767/ZN (INV2_140P7T30R)                        0.01       0.30 r
+  u_tile/U100533/S (ADH1V2_140P7T30R)                     0.03       0.33 f
+  u_tile/U478/ZN (NAND2V2_140P7T30R)                      0.01       0.34 r
+  u_tile/U9616/ZN (OAI12V2_140P7T30R)                     0.02       0.36 f
+  u_tile/U100613/CO (AD1V4_140P7T30R)                     0.04       0.40 f
+  u_tile/U10110/CO (AD1V2_140P7T30R)                      0.04       0.44 f
+  u_tile/U100594/CO (AD1V4_140P7T30R)                     0.03       0.48 f
+  u_tile/U100589/CO (AD1V4_140P7T30R)                     0.03       0.51 f
+  u_tile/U100584/CO (AD1V2_140P7T30R)                     0.04       0.55 f
+  u_tile/U9127/CO (AD1V2_140P7T30R)                       0.04       0.58 f
+  u_tile/U100575/CO (AD1V2_140P7T30R)                     0.04       0.62 f
+  u_tile/U100570/CO (AD1V4_140P7T30R)                     0.03       0.66 f
+  u_tile/U100565/CO (AD1V2_140P7T30R)                     0.04       0.69 f
+  u_tile/U100561/S (AD1V2_140P7T30R)                      0.05       0.75 r
+  u_tile/U2703/ZN (NOR2V2_140P7T30R)                      0.01       0.76 f
+  u_tile/U2701/Z (OA12V4_140P7T30R)                       0.02       0.78 f
+  u_tile/U100634/Z (OA12V2_140P7T30R)                     0.02       0.80 f
+  u_tile/U9615/ZN (OAI12V2_140P7T30R)                     0.02       0.82 r
+  u_tile/U199790/ZN (AOI12V4_140P7T30R)                   0.01       0.84 f
+  u_tile/U199794/ZN (OAI12V4_140P7T30R)                   0.01       0.85 r
+  u_tile/U199799/ZN (AOI12V2_140P7T30R)                   0.02       0.87 f
+  u_tile/U10109/ZN (OAI12V2_140P7T30R)                    0.02       0.89 r
+  u_tile/U321/Z (AO12V2_140P7T30R)                        0.02       0.91 r
+  u_tile/U199812/CO (AD1V2_140P7T30R)                     0.03       0.94 r
+  u_tile/U2783/ZN (XNOR2V2_140P7T30R)                     0.02       0.96 r
+  u_tile/U199811/Z (AO22V2_140P7T30R)                     0.02       0.98 r
+  u_tile/gen_row[8].gen_col[12].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[8].gen_col[12].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+  Startpoint: u_tile/gen_row[15].gen_col[2].u_pe/weight0_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: u_tile/gen_row[15].gen_col[2].u_pe/psum_south_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  u_tile/gen_row[15].gen_col[2].u_pe/weight0_reg[0]/CK (DQV2_140P7T30R)     0.00 #     0.00 r
+  u_tile/gen_row[15].gen_col[2].u_pe/weight0_reg[0]/Q (DQV2_140P7T30R)     0.04     0.04 f
+  u_tile/U9811/ZN (INV2_140P7T30R)                        0.02       0.07 r
+  u_tile/U14096/ZN (NAND2V2_140P7T30R)                    0.02       0.08 f
+  u_tile/U14161/ZN (INV2_140P7T30R)                       0.01       0.10 r
+  u_tile/U14162/ZN (NAND2V2_140P7T30R)                    0.01       0.11 f
+  u_tile/U14163/Z (XOR2V2_140P7T30R)                      0.02       0.13 f
+  u_tile/U14164/ZN (NAND2V2_140P7T30R)                    0.01       0.14 r
+  u_tile/U5030/Z (OA12V2_140P7T30R)                       0.03       0.18 r
+  u_tile/U4203/ZN (NOR2V4_140P7T30R)                      0.01       0.19 f
+  u_tile/U14244/CO (AD1V2_140P7T30R)                      0.04       0.22 f
+  u_tile/U8465/CO (AD1V2_140P7T30R)                       0.03       0.25 f
+  u_tile/U14235/S (AD1V2_140P7T30R)                       0.05       0.31 r
+  u_tile/U8103/CO (AD1V2_140P7T30R)                       0.03       0.34 r
+  u_tile/U14259/S (AD1V2_140P7T30R)                       0.04       0.39 f
+  u_tile/U14260/ZN (INV2_140P7T30R)                       0.01       0.40 r
+  u_tile/U14486/S (ADH1V2_140P7T30R)                      0.03       0.43 f
+  u_tile/U14487/ZN (NAND2V2_140P7T30R)                    0.01       0.44 r
+  u_tile/U14488/ZN (OAI12V2_140P7T30R)                    0.03       0.46 f
+  u_tile/U14549/CO (AD1V4_140P7T30R)                      0.05       0.51 f
+  u_tile/U14544/CO (AD1V2_140P7T30R)                      0.04       0.55 f
+  u_tile/U14539/CO (AD1V4_140P7T30R)                      0.03       0.58 f
+  u_tile/U9309/CO (AD1V2_140P7T30R)                       0.04       0.62 f
+  u_tile/U14530/CO (AD1V2_140P7T30R)                      0.04       0.66 f
+  u_tile/U14525/CO (AD1V4_140P7T30R)                      0.03       0.69 f
+  u_tile/U189/S (AD1V2_140P7T30R)                         0.05       0.74 r
+  u_tile/U14524/ZN (NOR2V2_140P7T30R)                     0.01       0.75 f
+  u_tile/U10320/Z (OA12V2_140P7T30R)                      0.02       0.77 f
+  u_tile/U14596/Z (OA12V2_140P7T30R)                      0.02       0.80 f
+  u_tile/U14598/ZN (OAI12V2_140P7T30R)                    0.02       0.82 r
+  u_tile/U14665/ZN (AOI12V2_140P7T30R)                    0.02       0.83 f
+  u_tile/U14669/ZN (OAI12V2_140P7T30R)                    0.02       0.85 r
+  u_tile/U14674/ZN (AOI12V2_140P7T30R)                    0.02       0.87 f
+  u_tile/U14678/ZN (OAI12V2_140P7T30R)                    0.02       0.89 r
+  u_tile/U4202/Z (AO12V4_140P7T30R)                       0.02       0.91 r
+  u_tile/U10465/CO (AD1V2_140P7T30R)                      0.03       0.94 r
+  u_tile/U14687/ZN (XNOR2V2_140P7T30R)                    0.02       0.96 r
+  u_tile/U10515/Z (AO22V2_140P7T30R)                      0.02       0.98 r
+  u_tile/gen_row[15].gen_col[2].u_pe/psum_south_reg[31]/D (DQV2_140P7T30R)     0.00     0.98 r
+  data arrival time                                                  0.98
+
+  clock clk (rise edge)                                   1.00       1.00
+  clock network delay (ideal)                             0.00       1.00
+  u_tile/gen_row[15].gen_col[2].u_pe/psum_south_reg[31]/CK (DQV2_140P7T30R)     0.00     1.00 r
+  library setup time                                     -0.02       0.98
+  data required time                                                 0.98
+  --------------------------------------------------------------------------
+  data required time                                                 0.98
+  data arrival time                                                 -0.98
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+
+
+****************************************
+Report : area
+Design : matrix_int8_pe_tile_probe
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 22:44:28 2026
+****************************************
+
+Library(s) Used:
+
+    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic (File: /home/lzl/project/newlpu/asic/dc/db/scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic.db)
+
+Number of ports:                         3254
+Number of nets:                        267699
+Number of cells:                       229229
+Number of combinational cells:         211763
+Number of sequential cells:             17465
+Number of macros/black boxes:               0
+Number of buf/inv:                      31590
+Number of references:                       3
+
+Combinational area:             114232.424765
+Buf/Inv area:                     6222.607840
+Noncombinational area:           30808.261016
+Macro/Black Box area:                0.000000
+Net Interconnect area:      undefined  (No wire load specified)
+
+Total cell area:                145040.685781
+Total area:                 undefined
+
+Hierarchical area distribution
+------------------------------
+
+                                  Global cell area              Local cell area
+                                  --------------------  -------------------------------
+Hierarchical cell                 Absolute     Percent  Combi-       Noncombi-   Black-
+                                  Total        Total    national     national    boxes   Design
+--------------------------------  -----------  -------  -----------  ----------  ------  -------------------
+matrix_int8_pe_tile_probe         145040.6858    100.0     323.4000   1455.3000  0.0000  matrix_int8_pe_tile_probe
+u_tile                            143261.9857     98.8  113909.0248  29352.9610  0.0000  matrix_int8_pe_tile
+--------------------------------  -----------  -------  -----------  ----------  ------  -------------------
+Total                                                   114232.4248  30808.2610  0.0000
+
+
+****************************************
+Report : power
+        -analysis_effort low
+Design : matrix_int8_pe_tile_probe
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 22:44:30 2026
+****************************************
+
+
+Library(s) Used:
+
+    scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic (File: /home/lzl/project/newlpu/asic/dc/db/scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic.db)
+
+
+Operating Conditions: tt_v0p9_25c   Library: scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+Wire Load Model Mode: top
+
+
+Global Operating Voltage = 0.9
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1uW
+
+
+  Cell Internal Power  =  62.3185 mW   (97%)
+  Net Switching Power  =   1.8473 mW    (3%)
+                         ---------
+Total Dynamic Power    =  64.1658 mW  (100%)
+
+Cell Leakage Power     =   1.0672 mW
+
+
+                 Internal         Switching           Leakage            Total
+Power Group      Power            Power               Power              Power   (   %    )  Attrs
+--------------------------------------------------------------------------------------------------
+io_pad             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+memory             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+black_box          0.0000            0.0000            0.0000            0.0000  (   0.00%)
+clock_network      0.0000            0.0000            0.0000            0.0000  (   0.00%)
+register          61.2544            0.2086          218.2433           61.6820  (  94.55%)
+sequential         0.0000            0.0000            0.0000            0.0000  (   0.00%)
+combinational      1.0647            1.6386          848.9467            3.5522  (   5.45%)
+--------------------------------------------------------------------------------------------------
+Total             62.3191 mW         1.8472 mW     1.0672e+03 uW        65.2342 mW
+
+****************************************
+Report : reference
+Design : matrix_int8_pe_tile_probe
+Version: O-2018.06-SP1
+Date   : Tue Aug 18 22:44:31 2026
+****************************************
+
+Attributes:
+    b - black box (unknown)
+   bo - allows boundary optimization
+    d - dont_touch
+   mo - map_only
+    h - hierarchical
+    n - noncombinational
+    r - removable
+    s - synthetic operator
+    u - contains unmapped logic
+
+Reference          Library       Unit Area   Count    Total Area   Attributes
+-----------------------------------------------------------------------------
+AND2V2_140P7T30R   scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  0.392000     825    323.399992
+DQV2_140P7T30R     scc28nhkcp_hdc30p140_rvt_tt_v0p9_25c_basic
+                                  1.764000     825   1455.300048  n
+matrix_int8_pe_tile           143261.985742
+                                                 1  143261.985742 h, n
+-----------------------------------------------------------------------------
+Total 3 references                                  145040.685781
+1

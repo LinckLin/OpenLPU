@@ -37,6 +37,8 @@ PIPELINE = [
     "synth_mac.sv",
     "matrix_int8_pe.sv",
     "matrix_int8_pe_probe.sv",
+    "matrix_int8_pe_tile.sv",
+    "matrix_int8_pe_tile_probe.sv",
 ]
 
 LOOP_BREAK = re.compile(r"\bk\s*=\s*-1\s*;")

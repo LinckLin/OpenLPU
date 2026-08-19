@@ -225,6 +225,9 @@ bash asic/run_matrix_sram_check.sh
 # 物理阵列 dual-MAC PE：完整 INT8 乘法域、bubble、重载与模 2^32 累加
 bash asic/run_matrix_int8_pe_check.sh
 
+# 16x16 结构 tile：二维 skew scoreboard（RTL）
+bash asic/run_matrix_int8_pe_tile_check.sh
+
 # 准备本地 SMIC28 标准单元和 SRAM 库（详见 asic/sram_macros/*/GEN.md）
 bash asic/smc28/setup_smic28.sh
 
@@ -246,6 +249,15 @@ DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
 DC_TECH=smic28 DC_PERIOD=0.9 DC_LABEL=pe1c_p090 \
   bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe
 bash asic/run_matrix_int8_pe_gate_check.sh
+
+# 16x16 tile 的 SMIC28 TT/SS 分层综合（1 ns probe；报告约 11.8/23.0 min CPU）
+DC_TECH=smic28 DC_LABEL=tile1c \
+  bash asic/dc/run_dc.sh tt_025C_1v80 matrix_int8_pe_tile
+DC_TECH=smic28 DC_LABEL=tile1c \
+  bash asic/dc/run_dc.sh ss_100C_1v60 matrix_int8_pe_tile
+
+# TT tile 映射网表 smoke（官方 HDC30P140 model，Icarus）
+bash asic/run_matrix_int8_pe_tile_gate_check.sh
 ```
 
 以下是保留的 sky130 legacy 开源复现路径。sky130 liberty（`sky130_fd_sc_hd__*.lib`，
@@ -288,6 +300,7 @@ done
 SMIC28：矩阵状态壳定向测试 4/4 PASS；DC 识别 9 个矩阵 kh4096x64，并报告专属输入/读出路径
 SMIC28：代表 synth_datapath / mac_bf16 的 tt/ss 1 ns ideal-clock 探针均 MET
 SMIC28：dual-MAC PE 核心/registered probe/TT 映射网表均 PASS；1.0 ns 与 0.9 ns 双角探针 MET
+SMIC28：16x16 tile RTL **2720 checks**、TT gate **1168 checks** 均 PASS；TT/SS tile 1 ns probe MET
 legacy sky130：P10b 数据通路 tt Fmax ≈ 129 MHz；历史 ss/ff corner 见报告 §3
-结论：以上均为 pre-layout 综合/STA 口径；16×16 tile、完整阵列、整芯片 CTS/寄生 signoff 尚未闭合
+结论：以上均为 pre-layout 综合/STA 口径；64-tile 完整阵列、整芯片 CTS/寄生 signoff 尚未闭合
 ```
